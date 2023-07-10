@@ -1,4 +1,6 @@
-# AVI
+# AVI Player
+
+A simple AVI player for Arduino IDE.
 
 ## conversion
 
