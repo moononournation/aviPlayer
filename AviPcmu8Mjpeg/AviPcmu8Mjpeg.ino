@@ -7,7 +7,7 @@
 #include <LittleFS.h>
 #include <SD_MMC.h>
 const char *root = "/root";
-const char *avi_file = "/root/pcmu8_mjpeg_q10_320p_10fps.avi";
+const char *avi_file = "/root/AviPcmu8Mjpeg320p10fps.avi";
 
 extern "C"
 {

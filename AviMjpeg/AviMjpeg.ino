@@ -6,7 +6,7 @@
 #include <FFat.h>
 #include <LittleFS.h>
 const char *root = "/root";
-const char *avi_file = "/root/pcmu8_mjpeg_q10_240p_15fps.avi";
+const char *avi_file = "/root/AviPcmu8Mjpeg240p15fps.avi";
 
 extern "C"
 {

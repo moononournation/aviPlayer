@@ -4,9 +4,9 @@
 
 #include <FFat.h>
 const char *root = "/root";
-// const char *avi_file = "/root/pcmu8_cinepak_q10_240p_15fps.avi";
-const char *avi_file = "/root/pcmu8_mjpeg_q10_240p_15fps.avi";
-// const char *avi_file = "/root/pcmu8_mjpeg_q10_320p_15fps.avi";
+// const char *avi_file = "/root/AviPcmu8Cinepak240p15fps.avi";
+const char *avi_file = "/root/AviPcmu8Mjpeg240p15fps.avi";
+// const char *avi_file = "/root/AviPcmu8Mjpeg320p10fps.avi";
 extern "C"
 {
 #include <avilib.h>

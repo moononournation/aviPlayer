@@ -4,7 +4,7 @@
 
 #include <FFat.h>
 const char *root = "/root";
-const char *avi_file = "/root/cinepakq10_pcmu8_240p.avi";
+const char *avi_file = "/root/AviPcmu8Cinepak240p15fps.avi";
 
 extern "C"
 {
