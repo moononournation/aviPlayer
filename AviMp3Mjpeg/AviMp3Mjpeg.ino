@@ -1,13 +1,15 @@
 /*
+ * require libraries:
+ * Arduino_GFX: https://github.com/moononournation/Arduino_GFX.git
  * avilib: https://github.com/lanyou1900/avilib.git
+ * libhelix: https://github.com/pschatzmann/arduino-libhelix.git
  * JPEGDEC: https://github.com/bitbank2/JPEGDEC.git
  */
-
 #include <FFat.h>
 #include <LittleFS.h>
 #include <SD_MMC.h>
 const char *root = "/root";
-const char *avi_file = "/root/AviPcmu8Mjpeg320p10fps.avi";
+const char *avi_file = "/root/AviMp3Mjpeg320p10fps.avi";
 
 extern "C"
 {
@@ -25,7 +27,6 @@ static int curr_frame = 0;
 static long curr_chunk = 0;
 static int skipped_frames = 0;
 static unsigned long start_ms, next_frame_ms;
-static int audio_feed_per_frame;
 
 #include <Arduino_GFX_Library.h>
 
@@ -109,22 +110,27 @@ void setup()
     Serial.printf("Audio channels: %d, bits: %d, format: %d, rate: %d, bytes: %d, chunks: %d\n", aChans, aBits, aFormat, aRate, aBytes, aChunks);
 
     vidbuf = (char *)malloc(estimateBufferSize);
-    audio_feed_per_frame = aRate / fr;
-    audbuf = (char *)malloc(audio_feed_per_frame * 4);
 
     i2s_init(I2S_NUM_0,
              aRate /* sample_rate */,
-             -1 /* mck_io_num */,  /*!< MCK in out pin. Note that ESP32 supports setting MCK on GPIO0/GPIO1/GPIO3 only*/
-             I2S_BCLK,             /*!< BCK in out pin*/
-             I2S_LRCK,             /*!< WS in out pin*/
-             I2S_DOUT,             /*!< DATA out pin*/
-             -1 /* data_in_num */, /*!< DATA in pin*/
-             audio_feed_per_frame);
+             -1 /* mck_io_num */, /*!< MCK in out pin. Note that ESP32 supports setting MCK on GPIO0/GPIO1/GPIO3 only*/
+             I2S_BCLK,            /*!< BCK in out pin*/
+             I2S_LRCK,            /*!< WS in out pin*/
+             I2S_DOUT,            /*!< DATA out pin*/
+             -1 /* data_in_num */ /*!< DATA in pin*/
+    );
     i2s_zero_dma_buffer(I2S_NUM_0);
 
     isStopped = false;
     start_ms = millis();
     next_frame_ms = start_ms + ((curr_frame + 1) * 1000 / fr);
+
+    gfx->println("Start play audio task");
+    BaseType_t ret_val = mp3_player_task_start(a);
+    if (ret_val != pdPASS)
+    {
+      Serial.printf("mp3_player_task_start failed: %d\n", ret_val);
+    }
   }
 }
 
@@ -134,17 +140,6 @@ void loop()
   {
     if (curr_frame < frames)
     {
-      int len = AVI_read_audio(a, audbuf, audio_feed_per_frame);
-      audioFeed(audbuf, len, 5);
-      if (curr_frame == 0)
-      {
-        len = AVI_read_audio(a, audbuf, audio_feed_per_frame);
-        audioFeed(audbuf, len, 5);
-
-        start_ms = millis();
-        next_frame_ms = start_ms + ((curr_frame + 1) * 1000 / fr);
-      }
-
       if (millis() < next_frame_ms) // check show frame or skip frame
       {
         AVI_set_video_position(a, curr_frame);

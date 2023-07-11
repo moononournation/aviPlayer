@@ -1,7 +1,5 @@
 #include "driver/i2s.h"
 
-static uint16_t *pwm_buffer;
-
 static esp_err_t i2s_init(i2s_port_t i2s_num, uint32_t sample_rate,
                           int mck_io_num,   /*!< MCK in out pin. Note that ESP32 supports setting MCK on GPIO0/GPIO1/GPIO3 only*/
                           int bck_io_num,   /*!< BCK in out pin*/
@@ -13,10 +11,11 @@ static esp_err_t i2s_init(i2s_port_t i2s_num, uint32_t sample_rate,
 {
     int dma_buf_len = 512;
     int dma_buf_count = (audio_feed_per_frame + (dma_buf_len - 1)) / dma_buf_len * 6;
+
     esp_err_t ret_val = ESP_OK;
 
     i2s_config_t i2s_config;
-    i2s_config.mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_RX);
+    i2s_config.mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX);
     i2s_config.sample_rate = sample_rate;
     i2s_config.bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT;
     i2s_config.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
@@ -43,7 +42,6 @@ static esp_err_t i2s_init(i2s_port_t i2s_num, uint32_t sample_rate,
     return ret_val;
 }
 
-static int samprate = 0;
 static void audioFeed(char *audbuf, size_t len, uint8_t gain_level)
 {
     size_t l = len;
