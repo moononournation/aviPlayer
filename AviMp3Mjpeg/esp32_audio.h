@@ -78,7 +78,6 @@ static void mp3_player_task(void *pvParam)
     audbuf = (char *)malloc(MP3_MAX_FRAME_SIZE);
 
     long audio_bytes;
-    long curr_chunk = 0;
     unsigned long ms = millis();
     char *p;
     long byte_remain, w;
@@ -99,7 +98,7 @@ static void mp3_player_task(void *pvParam)
         }
         total_decode_audio_ms += millis() - ms;
         ms = millis();
-    } while(audio_bytes);
+    } while(audio_bytes > 0);
     
     log_i("MP3 stop.");
 

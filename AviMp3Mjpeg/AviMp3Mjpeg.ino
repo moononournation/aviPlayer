@@ -70,7 +70,7 @@ void setup()
   Serial.begin(115200);
   // Serial.setDebugOutput(true);
   // while(!Serial);
-  Serial.println("avilib");
+  Serial.println("AviMp3Mjpeg");
 
   gfx->begin();
   gfx->fillScreen(BLACK);
@@ -166,7 +166,7 @@ void loop()
       else
       {
         ++skipped_frames;
-        Serial.printf("Skip frame %d > %d\n", millis(), next_frame_ms);
+        // Serial.printf("Skip frame %d > %d\n", millis(), next_frame_ms);
       }
 
       // Serial.printf("frame: %d, iskeyframe: %d, video_bytes: %d, actual_video_size: %d, audio_bytes: %d\n", curr_frame, iskeyframe, video_bytes, actual_video_size, audio_bytes);
