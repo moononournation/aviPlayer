@@ -1,8 +1,9 @@
 /*
+ * require libraries:
+ * Arduino_GFX: https://github.com/moononournation/Arduino_GFX.git
  * avilib: https://github.com/lanyou1900/avilib.git
  * JPEGDEC: https://github.com/bitbank2/JPEGDEC.git
  */
-
 #include <FFat.h>
 #include <LittleFS.h>
 const char *root = "/root";
@@ -20,7 +21,9 @@ static char *compressor;
 static char *vidbuf;
 static char *audbuf;
 static bool isStopped = true;
-static long curr_frame = 0;
+static int curr_frame = 0;
+static long curr_chunk = 0;
+static int skipped_frames = 0;
 static unsigned long start_ms;
 
 #include <Arduino_GFX_Library.h>
@@ -28,7 +31,7 @@ static unsigned long start_ms;
 /* More data bus class: https://github.com/moononournation/Arduino_GFX/wiki/Data-Bus-Class */
 Arduino_DataBus *bus = create_default_Arduino_DataBus();
 /* More display class: https://github.com/moononournation/Arduino_GFX/wiki/Display-Class */
-Arduino_GFX *gfx = new Arduino_ILI9341(bus, DF_GFX_RST, 3/* rotation */, false /* IPS */);
+Arduino_GFX *gfx = new Arduino_ILI9341(bus, DF_GFX_RST, 3 /* rotation */, false /* IPS */);
 
 #include <JPEGDEC.h>
 JPEGDEC jpegdec;
@@ -41,11 +44,12 @@ static int drawMCU(JPEGDRAW *pDraw)
   return 1;
 } /* drawMCU() */
 
-void setup() {
+void setup()
+{
   Serial.begin(115200);
   // Serial.setDebugOutput(true);
   // while(!Serial);
-  Serial.println("avilib");
+  Serial.println("AviMjpeg");
 
   gfx->begin();
   gfx->fillScreen(BLACK);
@@ -85,46 +89,62 @@ void setup() {
 
     isStopped = false;
     start_ms = millis();
+    next_frame_ms = start_ms + ((curr_frame + 1) * 1000 / fr);
   }
 }
 
-void loop() {
+void loop()
+{
   if (!isStopped)
   {
     if (curr_frame < frames)
     {
-      AVI_set_video_position(a, curr_frame);
-
-      long audio_bytes = AVI_audio_size(a, curr_frame);
+      long audio_bytes = AVI_audio_size(a, curr_chunk++);
       AVI_read_audio(a, audbuf, audio_bytes);
 
-      int iskeyframe;
-      long video_bytes = AVI_frame_size(a, curr_frame);
-      if (video_bytes > estimateBufferSize)
+      if (millis() < next_frame_ms) // check show frame or skip frame
       {
-        Serial.printf("video_bytes(%d) > estimateBufferSize(%d)\n", video_bytes, estimateBufferSize);
+        AVI_set_video_position(a, curr_frame);
+
+        int iskeyframe;
+        long video_bytes = AVI_frame_size(a, curr_frame);
+        if (video_bytes > estimateBufferSize)
+        {
+          Serial.printf("video_bytes(%d) > estimateBufferSize(%d)\n", video_bytes, estimateBufferSize);
+        }
+        else
+        {
+          actual_video_size = AVI_read_frame(a, vidbuf, &iskeyframe);
+          jpegdec.openRAM((uint8_t *)vidbuf, actual_video_size, drawMCU);
+          jpegdec.setPixelType(RGB565_BIG_ENDIAN);
+          jpegdec.decode(0, 0, 0);
+          jpegdec.close();
+        }
+        while (millis() < next_frame_ms)
+        {
+          vTaskDelay(pdMS_TO_TICKS(1));
+        }
       }
       else
       {
-        actual_video_size = AVI_read_frame(a, vidbuf, &iskeyframe);
-
-        jpegdec.openRAM((uint8_t*)vidbuf, actual_video_size, drawMCU);
-        jpegdec.setPixelType(RGB565_BIG_ENDIAN);
-        jpegdec.decode(0, 0, 0);
-        jpegdec.close();
+        ++skipped_frames;
+        // Serial.printf("Skip frame %d > %d\n", millis(), next_frame_ms);
       }
 
       // Serial.printf("frame: %d, iskeyframe: %d, video_bytes: %d, actual_video_size: %d, audio_bytes: %d\n", curr_frame, iskeyframe, video_bytes, actual_video_size, audio_bytes);
 
-      curr_frame++;
+      ++curr_frame;
+      next_frame_ms = start_ms + ((curr_frame + 1) * 1000 / fr);
     }
     else
     {
       AVI_close(a);
       isStopped = true;
-      Serial.printf("Duration: %d\n", millis() - start_ms);
+      Serial.printf("Duration: %d, skipped frames: %d\n", millis() - start_ms, skipped_frames);
     }
-  } else {
+  }
+  else
+  {
     delay(100);
   }
 }

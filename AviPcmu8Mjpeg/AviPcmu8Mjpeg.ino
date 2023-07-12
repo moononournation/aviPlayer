@@ -1,8 +1,9 @@
 /*
+ * require libraries:
+ * Arduino_GFX: https://github.com/moononournation/Arduino_GFX.git
  * avilib: https://github.com/lanyou1900/avilib.git
  * JPEGDEC: https://github.com/bitbank2/JPEGDEC.git
  */
-
 #include <FFat.h>
 #include <LittleFS.h>
 #include <SD_MMC.h>
@@ -69,7 +70,7 @@ void setup()
   Serial.begin(115200);
   // Serial.setDebugOutput(true);
   // while(!Serial);
-  Serial.println("avilib");
+  Serial.println("AviPcmu8Mjpeg");
 
   gfx->begin();
   gfx->fillScreen(BLACK);
@@ -140,9 +141,6 @@ void loop()
       {
         len = AVI_read_audio(a, audbuf, audio_feed_per_frame);
         audioFeed(audbuf, len, 5);
-
-        start_ms = millis();
-        next_frame_ms = start_ms + ((curr_frame + 1) * 1000 / fr);
       }
 
       if (millis() < next_frame_ms) // check show frame or skip frame
@@ -171,7 +169,7 @@ void loop()
       else
       {
         ++skipped_frames;
-        Serial.printf("Skip frame %d > %d\n", millis(), next_frame_ms);
+        // Serial.printf("Skip frame %d > %d\n", millis(), next_frame_ms);
       }
 
       // Serial.printf("frame: %d, iskeyframe: %d, video_bytes: %d, actual_video_size: %d, audio_bytes: %d\n", curr_frame, iskeyframe, video_bytes, actual_video_size, audio_bytes);
