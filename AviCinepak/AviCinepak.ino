@@ -7,7 +7,7 @@
 #include <LittleFS.h>
 #include <SD_MMC.h>
 const char *root = "/root";
-const char *avi_file = "/root/AviMp3Cinepak320p30fps.avi";
+const char *avi_file = "/root/AviMp3Cinepak240p15fps.avi";
 
 extern "C"
 {
@@ -84,7 +84,7 @@ void setup()
     h = AVI_video_height(a);
     fr = AVI_frame_rate(a);
     compressor = AVI_video_compressor(a);
-    estimateBufferSize = w * h * 2 / 7;
+    estimateBufferSize = w * h * 2 / 5;
     Serial.printf("AVI frames: %d, %d x %d @ %.2f fps, format: %s, estimateBufferSize: %d, ESP.getFreeHeap(): %d\n", frames, w, h, fr, compressor, estimateBufferSize, ESP.getFreeHeap());
 
     aChans = AVI_audio_channels(a);
@@ -126,10 +126,11 @@ void loop()
         else
         {
           actual_video_size = AVI_read_frame(a, vidbuf, &iskeyframe);
-          Serial.printf("frame: %d, iskeyframe: %d, video_bytes: %d, actual_video_size: %d, audio_bytes: %d, ESP.getFreeHeap(): %d\n", curr_frame, iskeyframe, video_bytes, actual_video_size, audio_bytes, ESP.getFreeHeap());
+          // Serial.printf("frame: %d, iskeyframe: %d, video_bytes: %d, actual_video_size: %d, audio_bytes: %d, ESP.getFreeHeap(): %d\n", curr_frame, iskeyframe, video_bytes, actual_video_size, audio_bytes, ESP.getFreeHeap());
 
           frame.setData((uint8_t *)vidbuf, actual_video_size);
-          const Surface *surface = decoder.decodeFrame(frame);
+          Surface *surface = decoder.decodeFrame(&frame);
+          // Serial.printf("w: %d, h: %d\n", surface->w, surface->h);
           gfx->draw16bitBeRGBBitmap(0, 0, (uint16_t *)surface->pixels, surface->w, surface->h);
         }
         while (millis() < next_frame_ms)
