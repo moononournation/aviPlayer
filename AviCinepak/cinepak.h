@@ -47,49 +47,61 @@ class FrameData
 public:
 	void setData(uint8_t *data, size_t size)
 	{
+log_i("FrameData.setData(data, %d)", size);
 		_buffer = data;
-		size = _size;
+		_size = size;
 		_pos = 0;
 	}
 	size_t size()
 	{
+log_i("FrameData.size(): %d", _size);
 		return _size;
 	}
 	size_t pos()
 	{
+log_i("FrameData.pos(): %d", _pos);
 		return _pos;
 	}
 	void seek(size_t pos)
 	{
+log_i("FrameData.seek(%d)", pos);
 		_pos = pos;
 	}
 	void seek_delta(size_t delta)
 	{
+log_i("FrameData.seek_delta(%d)", delta);
 		_pos += delta;
 	}
 	bool eos()
 	{
+log_i("FrameData.eos(), _pos: %d, _size: %d", _pos, _size);
 		return _pos >= (_size - 1);
 	}
 	uint8_t read(uint8_t *dst, size_t len)
 	{
-		while (len--)
+log_i("FrameData.read(dst, %d)", len);
+		for (int i = 0; i < len; i++)
 		{
-			*dst++ = _buffer[_pos++];
+			// dst[i] = _buffer[_pos++];
+			// dst[i] = 0;
+			_pos++;
 		}
 	}
 	uint8_t readByte()
 	{
+log_i("FrameData.readByte(), _pos: %d, _size: %d", _pos, _size);
 		return _buffer[_pos++];
 	}
 	uint16_t readUint16BE()
 	{
+log_i("FrameData.readUint16BE(), _pos: %d, _size: %d", _pos, _size);
 		uint16_t a = _buffer[_pos++];
 		uint16_t b = _buffer[_pos++];
 		return (a << 8) | b;
 	}
 	uint32_t readUint32BE()
 	{
+log_i("FrameData.readUint32BE(), _pos: %d, _size: %d", _pos, _size);
 		uint32_t a = _buffer[_pos++];
 		uint32_t b = _buffer[_pos++];
 		uint32_t c = _buffer[_pos++];
@@ -98,8 +110,8 @@ public:
 	}
 
 private:
-	size_t _size;
 	uint8_t *_buffer;
+	size_t _size;
 	size_t _pos;
 };
 
@@ -122,8 +134,8 @@ struct Rect
 {
 	int16_t top, left;								/*!< The point at the top left of the rectangle (part of the Rect). */
 	int16_t bottom, right;							/*!< The point at the bottom right of the rectangle (not part of the Rect). */
-	int16_t width() const { return right - left; }	/*!< Return the width of a rectangle. */
-	int16_t height() const { return bottom - top; } /*!< Return the height of a rectangle. */
+	int16_t width() { return right - left; }	/*!< Return the width of a rectangle. */
+	int16_t height() { return bottom - top; } /*!< Return the height of a rectangle. */
 };
 
 struct Surface
@@ -147,9 +159,9 @@ struct Surface
 		w = h = 0;
 	}
 
-	inline const void *getBasePtr(int x, int y) const
+	inline void *getBasePtr(int x, int y) const
 	{
-		return (const uint8_t *)(pixels) + y * pitch + x * 2;
+		return (uint8_t *)(pixels) + y * pitch + x * 2;
 	}
 };
 
@@ -182,7 +194,7 @@ struct CinepakFrame
 };
 
 template <typename PixelInt, typename CodebookConverter>
-void decodeVectorsTmpl(CinepakFrame &frame, const uint8_t *clipTable, const uint8_t *colorMap, FrameData &stream, uint16_t strip, uint8_t chunkID, uint32_t chunkSize)
+static void decodeVectorsTmpl(CinepakFrame &frame, uint8_t *clipTable, uint8_t *colorMap, FrameData &stream, uint16_t strip, uint8_t chunkID, uint32_t chunkSize)
 {
 	uint32_t flag = 0, mask = 0;
 	PixelInt *iy[4];
@@ -243,23 +255,25 @@ void decodeVectorsTmpl(CinepakFrame &frame, const uint8_t *clipTable, const uint
 	}
 }
 
-static inline void convertYUVToRGB(const uint8_t *clipTable, uint8_t y, int8_t u, int8_t v, uint8_t &r, uint8_t &g, uint8_t &b)
+static inline void convertYUVToRGB(uint8_t *clipTable, uint8_t y, int8_t u, int8_t v, uint8_t &r, uint8_t &g, uint8_t &b)
 {
-	log_i("convertYUVToRGB(%d, %d, %d)", y, u, v);
+log_i("convertYUVToRGB(%d, %d, %d)", y, u, v);
 	r = clipTable[(int)y + (v << 1)];
 	g = clipTable[(int)y - (u >> 1) - v];
 	b = clipTable[(int)y + (u << 1)];
 }
 
-static inline uint32_t convertYUVToColor(const uint8_t *clipTable, uint8_t y, uint8_t u, uint8_t v)
+static inline uint32_t convertYUVToColor(uint8_t *clipTable, uint8_t y, uint8_t u, uint8_t v)
 {
+log_i("convertYUVToColor(clipTable, %d, %d, %d)", y, u, v);
 	uint8_t r, g, b;
 	convertYUVToRGB(clipTable, y, u, v, r, g, b);
 	return ((((r)&0xF8) << 8) | (((g)&0xFC) << 3) | ((b) >> 3));
 }
 
-static inline uint16_t createDitherTableIndex(const uint8_t *clipTable, uint8_t y, int8_t u, int8_t v)
+static inline uint16_t createDitherTableIndex(uint8_t *clipTable, uint8_t y, int8_t u, int8_t v)
 {
+log_i("createDitherTableIndex(clipTable, %d, %d, %d)", y, u, v);
 	uint8_t r, g, b;
 	convertYUVToRGB(clipTable, y, u, v, r, g, b);
 	return ((r & 0xF8) << 6) |
@@ -273,15 +287,15 @@ static inline uint16_t makeQuickTimeDitherColor(uint8_t r, uint8_t g, uint8_t b)
 	return ((r & 0xF8) << 6) | ((g & 0xF8) << 1) | (b >> 4);
 }
 
-static inline uint16_t READ_UINT16(const void *ptr)
+static inline uint16_t READ_UINT16(void *ptr)
 {
-	const uint8_t *b = (const uint8_t *)ptr;
+	uint8_t *b = (uint8_t *)ptr;
 	return (b[1] << 8) | b[0];
 }
 
-static inline uint32_t READ_UINT32(const void *ptr)
+static inline uint32_t READ_UINT32(void *ptr)
 {
-	const uint8_t *b = (const uint8_t *)ptr;
+	uint8_t *b = (uint8_t *)ptr;
 	return (b[3] << 24) | (b[2] << 16) | (b[1] << 8) | (b[0]);
 }
 
@@ -317,7 +331,7 @@ static inline void addColorToQueue(uint16_t color, uint16_t index, uint8_t *chec
 }
 
 template <typename PixelInt>
-static inline void putPixelRaw(PixelInt *dst, const uint8_t *clipTable, uint8_t y, uint8_t u, uint8_t v)
+static inline void putPixelRaw(PixelInt *dst, uint8_t *clipTable, uint8_t y, uint8_t u, uint8_t v)
 {
 	*dst = convertYUVToColor(clipTable, y, u, v);
 }
@@ -325,9 +339,10 @@ static inline void putPixelRaw(PixelInt *dst, const uint8_t *clipTable, uint8_t 
 struct CodebookConverterRaw
 {
 	template <typename PixelInt>
-	static inline void decodeBlock1(uint8_t codebookIndex, const CinepakStrip &strip, PixelInt *(&rows)[4], const uint8_t *clipTable, const uint8_t *colorMap)
+	static inline void decodeBlock1(uint8_t codebookIndex, CinepakStrip &strip, PixelInt *(&rows)[4], uint8_t *clipTable, uint8_t *colorMap)
 	{
-		const CinepakCodebook &codebook = strip.v1_codebook[codebookIndex];
+log_i("CodebookConverterRaw.decodeBlock1()");
+		CinepakCodebook &codebook = strip.v1_codebook[codebookIndex];
 		putPixelRaw(rows[0] + 0, clipTable, codebook.y[0], codebook.u, codebook.v);
 		putPixelRaw(rows[0] + 1, clipTable, codebook.y[0], codebook.u, codebook.v);
 		putPixelRaw(rows[1] + 0, clipTable, codebook.y[0], codebook.u, codebook.v);
@@ -350,27 +365,28 @@ struct CodebookConverterRaw
 	}
 
 	template <typename PixelInt>
-	static inline void decodeBlock4(const uint8_t (&codebookIndex)[4], const CinepakStrip &strip, PixelInt *(&rows)[4], const uint8_t *clipTable, const uint8_t *colorMap)
+	static inline void decodeBlock4(uint8_t (&codebookIndex)[4], CinepakStrip &strip, PixelInt *(&rows)[4], uint8_t *clipTable, uint8_t *colorMap)
 	{
-		const CinepakCodebook &codebook1 = strip.v4_codebook[codebookIndex[0]];
+log_i("CodebookConverterRaw.decodeBlock4()");
+		CinepakCodebook &codebook1 = strip.v4_codebook[codebookIndex[0]];
 		putPixelRaw(rows[0] + 0, clipTable, codebook1.y[0], codebook1.u, codebook1.v);
 		putPixelRaw(rows[0] + 1, clipTable, codebook1.y[1], codebook1.u, codebook1.v);
 		putPixelRaw(rows[1] + 0, clipTable, codebook1.y[2], codebook1.u, codebook1.v);
 		putPixelRaw(rows[1] + 1, clipTable, codebook1.y[3], codebook1.u, codebook1.v);
 
-		const CinepakCodebook &codebook2 = strip.v4_codebook[codebookIndex[1]];
+		CinepakCodebook &codebook2 = strip.v4_codebook[codebookIndex[1]];
 		putPixelRaw(rows[0] + 2, clipTable, codebook2.y[0], codebook2.u, codebook2.v);
 		putPixelRaw(rows[0] + 3, clipTable, codebook2.y[1], codebook2.u, codebook2.v);
 		putPixelRaw(rows[1] + 2, clipTable, codebook2.y[2], codebook2.u, codebook2.v);
 		putPixelRaw(rows[1] + 3, clipTable, codebook2.y[3], codebook2.u, codebook2.v);
 
-		const CinepakCodebook &codebook3 = strip.v4_codebook[codebookIndex[2]];
+		CinepakCodebook &codebook3 = strip.v4_codebook[codebookIndex[2]];
 		putPixelRaw(rows[2] + 0, clipTable, codebook3.y[0], codebook3.u, codebook3.v);
 		putPixelRaw(rows[2] + 1, clipTable, codebook3.y[1], codebook3.u, codebook3.v);
 		putPixelRaw(rows[3] + 0, clipTable, codebook3.y[2], codebook3.u, codebook3.v);
 		putPixelRaw(rows[3] + 1, clipTable, codebook3.y[3], codebook3.u, codebook3.v);
 
-		const CinepakCodebook &codebook4 = strip.v4_codebook[codebookIndex[3]];
+		CinepakCodebook &codebook4 = strip.v4_codebook[codebookIndex[3]];
 		putPixelRaw(rows[2] + 2, clipTable, codebook4.y[0], codebook4.u, codebook4.v);
 		putPixelRaw(rows[2] + 3, clipTable, codebook4.y[1], codebook4.u, codebook4.v);
 		putPixelRaw(rows[3] + 2, clipTable, codebook4.y[2], codebook4.u, codebook4.v);
@@ -380,9 +396,10 @@ struct CodebookConverterRaw
 
 struct CodebookConverterDitherVFW
 {
-	static inline void decodeBlock1(uint8_t codebookIndex, const CinepakStrip &strip, uint8_t *(&rows)[4], const uint8_t *clipTable, const uint8_t *colorMap)
+	static inline void decodeBlock1(uint8_t codebookIndex, CinepakStrip &strip, uint8_t *(&rows)[4], uint8_t *clipTable, uint8_t *colorMap)
 	{
-		const CinepakCodebook &codebook = strip.v1_codebook[codebookIndex];
+log_i("CodebookConverterDitherVFW.decodeBlock1()");
+		CinepakCodebook &codebook = strip.v1_codebook[codebookIndex];
 		uint8_t blockBuffer[16];
 		ditherCodebookSmooth(codebook, blockBuffer, colorMap);
 		rows[0][0] = blockBuffer[0];
@@ -403,8 +420,9 @@ struct CodebookConverterDitherVFW
 		rows[3][3] = blockBuffer[15];
 	}
 
-	static inline void decodeBlock4(const uint8_t (&codebookIndex)[4], const CinepakStrip &strip, uint8_t *(&rows)[4], const uint8_t *clipTable, const uint8_t *colorMap)
+	static inline void decodeBlock4(uint8_t (&codebookIndex)[4], CinepakStrip &strip, uint8_t *(&rows)[4], uint8_t *clipTable, uint8_t *colorMap)
 	{
+log_i("CodebookConverterDitherVFW.decodeBlock4()");
 		uint8_t blockBuffer[16];
 		ditherCodebookDetail(strip.v4_codebook[codebookIndex[0]], blockBuffer, colorMap);
 		rows[0][0] = blockBuffer[0];
@@ -432,8 +450,9 @@ struct CodebookConverterDitherVFW
 	}
 
 private:
-	static inline void ditherCodebookDetail(const CinepakCodebook &codebook, uint8_t *dst, const uint8_t *colorMap)
+	static inline void ditherCodebookDetail(CinepakCodebook &codebook, uint8_t *dst, uint8_t *colorMap)
 	{
+log_i("CodebookConverterDitherVFW.ditherCodebookDetail()");
 		int uLookup = (uint8_t)codebook.u * 2;
 		int vLookup = (uint8_t)codebook.v * 2;
 		uint32_t uv1 = s_uLookup[uLookup] | s_vLookup[vLookup];
@@ -471,8 +490,9 @@ private:
 		dst[15] = getRGBLookupEntry(colorMap, pixelGroup4 & 0xFFFF);
 	}
 
-	static inline void ditherCodebookSmooth(const CinepakCodebook &codebook, uint8_t *dst, const uint8_t *colorMap)
+	static inline void ditherCodebookSmooth(CinepakCodebook &codebook, uint8_t *dst, uint8_t *colorMap)
 	{
+log_i("CodebookConverterDitherVFW.ditherCodebookSmooth()");
 		int uLookup = (uint8_t)codebook.u * 2;
 		int vLookup = (uint8_t)codebook.v * 2;
 		uint32_t uv1 = s_uLookup[uLookup] | s_vLookup[vLookup];
@@ -510,26 +530,29 @@ private:
 		dst[15] = getRGBLookupEntry(colorMap, pixelGroup7 & 0xFFFF);
 	}
 
-	static inline uint8_t getRGBLookupEntry(const uint8_t *colorMap, uint16_t index)
+	static inline uint8_t getRGBLookupEntry(uint8_t *colorMap, uint16_t index)
 	{
+log_i("CodebookConverterDitherVFW.getRGBLookupEntry()");
 		return colorMap[s_defaultPaletteLookup[CLIP<int>(index, 0, 1023)]];
 	}
 };
 
 struct CodebookConverterDitherQT
 {
-	static inline void decodeBlock1(uint8_t codebookIndex, const CinepakStrip &strip, uint8_t *(&rows)[4], const uint8_t *clipTable, const uint8_t *colorMap)
+	static inline void decodeBlock1(uint8_t codebookIndex, CinepakStrip &strip, uint8_t *(&rows)[4], uint8_t *clipTable, uint8_t *colorMap)
 	{
-		const uint8_t *colorPtr = strip.v1_dither + (codebookIndex << 2);
+log_i("CodebookConverterDitherQT.decodeBlock1()");
+		uint8_t *colorPtr = strip.v1_dither + (codebookIndex << 2);
 		WRITE_UINT32(rows[0], READ_UINT32(colorPtr));
 		WRITE_UINT32(rows[1], READ_UINT32(colorPtr + 1024));
 		WRITE_UINT32(rows[2], READ_UINT32(colorPtr + 2048));
 		WRITE_UINT32(rows[3], READ_UINT32(colorPtr + 3072));
 	}
 
-	static inline void decodeBlock4(const uint8_t (&codebookIndex)[4], const CinepakStrip &strip, uint8_t *(&rows)[4], const uint8_t *clipTable, const uint8_t *colorMap)
+	static inline void decodeBlock4(uint8_t (&codebookIndex)[4], CinepakStrip &strip, uint8_t *(&rows)[4], uint8_t *clipTable, uint8_t *colorMap)
 	{
-		const uint8_t *colorPtr = strip.v4_dither + (codebookIndex[0] << 2);
+log_i("CodebookConverterDitherQT.decodeBlock4()");
+		uint8_t *colorPtr = strip.v4_dither + (codebookIndex[0] << 2);
 		WRITE_UINT16(rows[0] + 0, READ_UINT16(colorPtr + 0));
 		WRITE_UINT16(rows[1] + 0, READ_UINT16(colorPtr + 2));
 
@@ -599,7 +622,7 @@ public:
 		delete[] _ditherPalette;
 	}
 
-	const Surface *decodeFrame(FrameData &stream)
+	Surface *decodeFrame(FrameData &stream)
 	{
 		_curFrame.flags = stream.readByte();
 		_curFrame.length = (stream.readByte() << 16);
@@ -608,7 +631,7 @@ public:
 		_curFrame.height = stream.readUint16BE();
 		_curFrame.stripCount = stream.readUint16BE();
 
-		log_i("Cinepak Frame: Width = %d, Height = %d, Strip Count = %d", _curFrame.width, _curFrame.height, _curFrame.stripCount);
+log_i("Cinepak Frame: Width = %d, Height = %d, Strip Count = %d", _curFrame.width, _curFrame.height, _curFrame.stripCount);
 
 		if (!_curFrame.strips)
 		{
@@ -719,15 +742,15 @@ public:
 		return _curFrame.surface;
 	}
 
-	bool containsPalette() const { return _ditherPalette != 0; }
-	const uint8_t *getPalette()
+	bool containsPalette() { return _ditherPalette != 0; }
+	uint8_t *getPalette()
 	{
 		_dirtyPalette = false;
 		return _ditherPalette;
 	}
-	bool hasDirtyPalette() const { return _dirtyPalette; }
-	bool canDither(DitherType type) const { return (type == kDitherTypeVFW || type == kDitherTypeQT) && _bitsPerPixel == 24; }
-	void setDither(DitherType type, const uint8_t *palette)
+	bool hasDirtyPalette() { return _dirtyPalette; }
+	bool canDither(DitherType type) { return (type == kDitherTypeVFW || type == kDitherTypeQT) && _bitsPerPixel == 24; }
+	void setDither(DitherType type, uint8_t *palette)
 	{
 		assert(canDither(type));
 
@@ -766,7 +789,7 @@ private:
 	uint8_t *_colorMap;
 	DitherType _ditherType;
 
-	uint8_t *createQuickTimeDitherTable(const uint8_t *palette, uint colorCount)
+	uint8_t *createQuickTimeDitherTable(uint8_t *palette, uint colorCount)
 	{
 		uint8_t *buf = new uint8_t[0x10000]();
 
@@ -775,7 +798,7 @@ private:
 		bool foundBlack = false;
 		bool foundWhite = false;
 
-		const uint8_t *palPtr = palette;
+		uint8_t *palPtr = palette;
 
 		// See what colors we have, and add them to the queue to check
 		for (uint i = 0; i < colorCount; i++)
@@ -901,6 +924,7 @@ private:
 
 	void initializeCodebook(uint16_t strip, uint8_t codebookType)
 	{
+log_i("initializeCodebook(%d, %d)", strip, codebookType);
 		CinepakCodebook *codebook = (codebookType == 1) ? _curFrame.strips[strip].v1_codebook : _curFrame.strips[strip].v4_codebook;
 
 		for (uint16_t i = 0; i < 256; i++)
@@ -916,6 +940,7 @@ private:
 
 	void loadCodebook(FrameData &stream, uint16_t strip, uint8_t codebookType, uint8_t chunkID, uint32_t chunkSize)
 	{
+log_i("loadCodebook(stream, %d, %d, %d, %d)", strip, codebookType, chunkID, chunkSize);
 		CinepakCodebook *codebook = (codebookType == 1) ? _curFrame.strips[strip].v1_codebook : _curFrame.strips[strip].v4_codebook;
 
 		int32_t startPos = stream.pos();
@@ -938,8 +963,9 @@ private:
 				if ((stream.pos() - startPos + n) > (int32_t)chunkSize)
 					break;
 
-				stream.read(codebook[i].y, 4);
-
+log_i("loadCodebook point 1, i: %d", i);
+				stream.read(&(codebook[i].y[0]), 4);
+log_i("loadCodebook point 2, i: %d", i);
 				if (n == 6)
 				{
 					codebook[i].u = stream.readByte();
@@ -953,6 +979,7 @@ private:
 					codebook[i].u = 0;
 					codebook[i].v = 0;
 				}
+log_i("loadCodebook point 3");
 
 				// Dither the codebook if we're dithering for QuickTime
 				if (_ditherType == kDitherTypeQT)
@@ -1007,9 +1034,10 @@ private:
 
 	void ditherCodebookQT(uint16_t strip, uint8_t codebookType, uint16_t codebookIndex)
 	{
+log_i("ditherCodebookQT(%d, %d, %d)", strip, codebookType, codebookIndex);
 		if (codebookType == 1)
 		{
-			const CinepakCodebook &codebook = _curFrame.strips[strip].v1_codebook[codebookIndex];
+			CinepakCodebook &codebook = _curFrame.strips[strip].v1_codebook[codebookIndex];
 			uint8_t *output = _curFrame.strips[strip].v1_dither + (codebookIndex << 2);
 
 			uint8_t *ditherEntry = _colorMap + createDitherTableIndex(_clipTable, codebook.y[0], codebook.u, codebook.v);
@@ -1038,7 +1066,7 @@ private:
 		}
 		else
 		{
-			const CinepakCodebook &codebook = _curFrame.strips[strip].v4_codebook[codebookIndex];
+			CinepakCodebook &codebook = _curFrame.strips[strip].v4_codebook[codebookIndex];
 			uint8_t *output = _curFrame.strips[strip].v4_dither + (codebookIndex << 2);
 
 			uint8_t *ditherEntry = _colorMap + createDitherTableIndex(_clipTable, codebook.y[0], codebook.u, codebook.v);
