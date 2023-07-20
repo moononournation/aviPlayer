@@ -54,8 +54,8 @@ FrameData frame;
 void setup()
 {
   Serial.begin(115200);
-  Serial.setDebugOutput(true);
-  while(!Serial);
+  // Serial.setDebugOutput(true);
+  // while(!Serial);
   Serial.println("AviCinepak");
 
   gfx->begin();
@@ -129,7 +129,7 @@ void loop()
           // Serial.printf("frame: %d, iskeyframe: %d, video_bytes: %d, actual_video_size: %d, audio_bytes: %d, ESP.getFreeHeap(): %d\n", curr_frame, iskeyframe, video_bytes, actual_video_size, audio_bytes, ESP.getFreeHeap());
 
           frame.setData((uint8_t *)vidbuf, actual_video_size);
-          Surface *surface = decoder.decodeFrame(&frame);
+          Surface *surface = decoder.decodeFrame(frame);
           // Serial.printf("w: %d, h: %d\n", surface->w, surface->h);
           gfx->draw16bitBeRGBBitmap(0, 0, (uint16_t *)surface->pixels, surface->w, surface->h);
         }
