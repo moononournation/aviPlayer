@@ -54,7 +54,7 @@ public:
 	{
 		while (--len)
 		{
-			*dst = _buffer[_pos++];
+			*dst++ = _buffer[_pos++];
 		}
 	}
 	uint8_t readUint8()
