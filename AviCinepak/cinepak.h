@@ -24,21 +24,21 @@
 class FrameData
 {
 public:
-	void setData(uint8_t *data, int32_t size)
+	void setData(uint8_t *data, size_t size)
 	{
 		_buffer = data;
 		_size = size;
 		_pos = 0;
 	}
-	int32_t size()
+	size_t size()
 	{
 		return _size;
 	}
-	int32_t pos()
+	size_t pos()
 	{
 		return _pos;
 	}
-	void seek(int32_t pos)
+	void seek(size_t pos)
 	{
 		_pos = pos;
 	}
@@ -50,7 +50,7 @@ public:
 	{
 		return _pos >= (_size - 1);
 	}
-	void read(uint8_t *dst, int32_t len)
+	void read(uint8_t *dst, size_t len)
 	{
 		while (--len)
 		{
@@ -78,8 +78,8 @@ public:
 
 private:
 	uint8_t *_buffer;
-	int32_t _size;
-	int32_t _pos;
+	size_t _size;
+	size_t _pos;
 };
 
 struct Rect
