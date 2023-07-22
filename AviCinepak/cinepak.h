@@ -21,31 +21,28 @@
  *
  */
 
-#include "list.h"
-#include "cinepak_tables.h"
-
 class FrameData
 {
 public:
-	void setData(uint8_t *data, size_t size)
+	void setData(uint8_t *data, int32_t size)
 	{
 		_buffer = data;
 		_size = size;
 		_pos = 0;
 	}
-	size_t size()
+	int32_t size()
 	{
 		return _size;
 	}
-	size_t pos()
+	int32_t pos()
 	{
 		return _pos;
 	}
-	void seek(size_t pos)
+	void seek(int32_t pos)
 	{
 		_pos = pos;
 	}
-	void seek_delta(size_t delta)
+	void seek_delta(int32_t delta)
 	{
 		_pos += delta;
 	}
@@ -53,11 +50,11 @@ public:
 	{
 		return _pos >= (_size - 1);
 	}
-	void read(uint8_t *dst, size_t len)
+	void read(uint8_t *dst, int32_t len)
 	{
 		while (--len)
 		{
-			*dst++ = _buffer[_pos++];
+			*dst = _buffer[_pos++];
 		}
 	}
 	uint8_t readUint8()
@@ -81,8 +78,8 @@ public:
 
 private:
 	uint8_t *_buffer;
-	size_t _size;
-	size_t _pos;
+	int32_t _size;
+	int32_t _pos;
 };
 
 struct Rect
