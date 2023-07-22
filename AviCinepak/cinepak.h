@@ -60,7 +60,7 @@ public:
 			*dst++ = _buffer[_pos++];
 		}
 	}
-	uint8_t readByte()
+	uint8_t readUint8()
 	{
 		return _buffer[_pos++];
 	}
@@ -141,121 +141,6 @@ struct CinepakFrame
 	Surface *surface;
 };
 
-static inline void convertYUVToRGB(uint8_t *_clipTable, uint8_t y, int8_t u, int8_t v, uint8_t &r, uint8_t &g, uint8_t &b)
-{
-	// log_i("convertYUVToRGB(%d, %d, %d)", y, u, v);
-	r = _clipTable[y + (v << 1)];
-	g = _clipTable[y - (u >> 1) - v];
-	b = _clipTable[y + (u << 1)];
-}
-
-static inline uint16_t convertYUVToColor(uint8_t *_clipTable, uint8_t y, uint8_t u, uint8_t v)
-{
-	// log_i("convertYUVToColor(_clipTable, %d, %d, %d)", y, u, v);
-	uint8_t r, g, b;
-	convertYUVToRGB(_clipTable, y, u, v, r, g, b);
-	return ((((uint16_t)(r)&0xF8) << 8) | (((g)&0xFC) << 3) | ((b) >> 3));
-}
-
-static inline void putPixelRaw(uint16_t *dst, uint8_t *_clipTable, uint8_t y, uint8_t u, uint8_t v)
-{
-	*dst = convertYUVToColor(_clipTable, y, u, v);
-}
-
-struct CodebookConverterRaw
-{
-	static inline void decodeBlock1(uint8_t codebookIndex, CinepakStrip &strip, uint16_t *(&rows)[4], uint8_t *_clipTable, uint8_t *_colorMap)
-	{
-		// log_i("CodebookConverterRaw.decodeBlock1()");
-		CinepakCodebook &codebook = strip.v1_codebook[codebookIndex];
-		putPixelRaw(rows[0] + 0, _clipTable, codebook.y[0], codebook.u, codebook.v);
-		putPixelRaw(rows[0] + 1, _clipTable, codebook.y[0], codebook.u, codebook.v);
-		putPixelRaw(rows[1] + 0, _clipTable, codebook.y[0], codebook.u, codebook.v);
-		putPixelRaw(rows[1] + 1, _clipTable, codebook.y[0], codebook.u, codebook.v);
-
-		putPixelRaw(rows[0] + 2, _clipTable, codebook.y[1], codebook.u, codebook.v);
-		putPixelRaw(rows[0] + 3, _clipTable, codebook.y[1], codebook.u, codebook.v);
-		putPixelRaw(rows[1] + 2, _clipTable, codebook.y[1], codebook.u, codebook.v);
-		putPixelRaw(rows[1] + 3, _clipTable, codebook.y[1], codebook.u, codebook.v);
-
-		putPixelRaw(rows[2] + 0, _clipTable, codebook.y[2], codebook.u, codebook.v);
-		putPixelRaw(rows[2] + 1, _clipTable, codebook.y[2], codebook.u, codebook.v);
-		putPixelRaw(rows[3] + 0, _clipTable, codebook.y[2], codebook.u, codebook.v);
-		putPixelRaw(rows[3] + 1, _clipTable, codebook.y[2], codebook.u, codebook.v);
-
-		putPixelRaw(rows[2] + 2, _clipTable, codebook.y[3], codebook.u, codebook.v);
-		putPixelRaw(rows[2] + 3, _clipTable, codebook.y[3], codebook.u, codebook.v);
-		putPixelRaw(rows[3] + 2, _clipTable, codebook.y[3], codebook.u, codebook.v);
-		putPixelRaw(rows[3] + 3, _clipTable, codebook.y[3], codebook.u, codebook.v);
-	}
-
-	static inline void decodeBlock4(uint8_t (&codebookIndex)[4], CinepakStrip &strip, uint16_t *(&rows)[4], uint8_t *_clipTable, uint8_t *_colorMap)
-	{
-		// log_i("CodebookConverterRaw.decodeBlock4()");
-		CinepakCodebook &codebook1 = strip.v4_codebook[codebookIndex[0]];
-		putPixelRaw(rows[0] + 0, _clipTable, codebook1.y[0], codebook1.u, codebook1.v);
-		putPixelRaw(rows[0] + 1, _clipTable, codebook1.y[1], codebook1.u, codebook1.v);
-		putPixelRaw(rows[1] + 0, _clipTable, codebook1.y[2], codebook1.u, codebook1.v);
-		putPixelRaw(rows[1] + 1, _clipTable, codebook1.y[3], codebook1.u, codebook1.v);
-
-		CinepakCodebook &codebook2 = strip.v4_codebook[codebookIndex[1]];
-		putPixelRaw(rows[0] + 2, _clipTable, codebook2.y[0], codebook2.u, codebook2.v);
-		putPixelRaw(rows[0] + 3, _clipTable, codebook2.y[1], codebook2.u, codebook2.v);
-		putPixelRaw(rows[1] + 2, _clipTable, codebook2.y[2], codebook2.u, codebook2.v);
-		putPixelRaw(rows[1] + 3, _clipTable, codebook2.y[3], codebook2.u, codebook2.v);
-
-		CinepakCodebook &codebook3 = strip.v4_codebook[codebookIndex[2]];
-		putPixelRaw(rows[2] + 0, _clipTable, codebook3.y[0], codebook3.u, codebook3.v);
-		putPixelRaw(rows[2] + 1, _clipTable, codebook3.y[1], codebook3.u, codebook3.v);
-		putPixelRaw(rows[3] + 0, _clipTable, codebook3.y[2], codebook3.u, codebook3.v);
-		putPixelRaw(rows[3] + 1, _clipTable, codebook3.y[3], codebook3.u, codebook3.v);
-
-		CinepakCodebook &codebook4 = strip.v4_codebook[codebookIndex[3]];
-		putPixelRaw(rows[2] + 2, _clipTable, codebook4.y[0], codebook4.u, codebook4.v);
-		putPixelRaw(rows[2] + 3, _clipTable, codebook4.y[1], codebook4.u, codebook4.v);
-		putPixelRaw(rows[3] + 2, _clipTable, codebook4.y[2], codebook4.u, codebook4.v);
-		putPixelRaw(rows[3] + 3, _clipTable, codebook4.y[3], codebook4.u, codebook4.v);
-	}
-};
-
-static inline uint16_t READ_UINT16(void *ptr)
-{
-	uint8_t *b = (uint8_t *)ptr;
-	return (b[1] << 8) | b[0];
-}
-
-static inline uint32_t READ_UINT32(void *ptr)
-{
-	uint8_t *b = (uint8_t *)ptr;
-	return (b[3] << 24) | (b[2] << 16) | (b[1] << 8) | (b[0]);
-}
-
-static inline void WRITE_UINT16(void *ptr, uint16_t value)
-{
-	uint8_t *b = (uint8_t *)ptr;
-	b[0] = (uint8_t)(value >> 8);
-	b[1] = (uint8_t)(value >> 0);
-}
-
-static inline void WRITE_UINT32(void *ptr, uint32_t value)
-{
-	uint8_t *b = (uint8_t *)ptr;
-	b[0] = (uint8_t)(value >> 0);
-	b[1] = (uint8_t)(value >> 8);
-	b[2] = (uint8_t)(value >> 16);
-	b[3] = (uint8_t)(value >> 24);
-}
-
-static inline void addColorToQueue(uint16_t color, uint16_t index, uint8_t *checkBuffer, Common::List<uint16_t> &checkQueue)
-{
-	if ((READ_UINT16(checkBuffer + color * 2) & 0xFF) == 0)
-	{
-		// Previously unfound color
-		WRITE_UINT16(checkBuffer + color * 2, index);
-		checkQueue.push_back(color);
-	}
-}
-
 /**
  * Cinepak decoder.
  *
@@ -272,7 +157,6 @@ public:
 		_curFrame.surface = 0;
 		_curFrame.strips = 0;
 		_y = 0;
-		_colorMap = 0;
 
 		// Create a lookup for the clip function
 		// This dramatically improves the performance of the color conversion
@@ -301,14 +185,12 @@ public:
 
 		delete[] _curFrame.strips;
 		delete[] _clipTableBuf;
-
-		delete[] _colorMap;
 	}
 
 	Surface *decodeFrame(FrameData &stream)
 	{
-		_curFrame.flags = stream.readByte();
-		_curFrame.length = (stream.readByte() << 16);
+		_curFrame.flags = stream.readUint8();
+		_curFrame.length = (stream.readUint8() << 16);
 		_curFrame.length |= stream.readUint16BE();
 		_curFrame.width = stream.readUint16BE();
 		_curFrame.height = stream.readUint16BE();
@@ -373,13 +255,13 @@ public:
 
 			while ((uint32_t)stream.pos() < (pos + _curFrame.strips[i].length) && !stream.eos())
 			{
-				uint8_t chunkID = stream.readByte();
+				uint8_t chunkID = stream.readUint8();
 
 				if (stream.eos())
 					break;
 
 				// Chunk Size is 24-bit, ignore the first 4 bytes
-				uint32_t chunkSize = stream.readByte() << 16;
+				uint32_t chunkSize = stream.readUint8() << 16;
 				chunkSize += stream.readUint16BE() - 4;
 
 				int32_t startPos = stream.pos();
@@ -467,8 +349,8 @@ private:
 				stream.read(codebook[i].y, 4);
 				if (n == 6)
 				{
-					codebook[i].u = stream.readByte();
-					codebook[i].v = stream.readByte();
+					codebook[i].u = stream.readUint8();
+					codebook[i].v = stream.readUint8();
 				}
 				else
 				{
@@ -480,6 +362,68 @@ private:
 				}
 			}
 		}
+	}
+
+	void putPixelRaw(uint16_t *dst, uint8_t y, int8_t u, int8_t v)
+	{
+		uint8_t r, g, b;
+		r = _clipTable[y + (v << 1)];
+		g = _clipTable[y - (u >> 1) - v];
+		b = _clipTable[y + (u << 1)];
+		*dst = ((( 0xF8 & r) << 8) | ((0xFC & g) << 3) | ((b) >> 3));
+	}
+
+	void decodeBlock1(uint8_t codebookIndex, CinepakStrip &strip, uint16_t *(&rows)[4])
+	{
+		// log_i("CodebookConverterRaw.decodeBlock1()");
+		CinepakCodebook *codebook = &(strip.v1_codebook[codebookIndex]);
+		putPixelRaw(rows[0] + 0, codebook->y[0], codebook->u, codebook->v);
+		putPixelRaw(rows[0] + 1, codebook->y[0], codebook->u, codebook->v);
+		putPixelRaw(rows[1] + 0, codebook->y[0], codebook->u, codebook->v);
+		putPixelRaw(rows[1] + 1, codebook->y[0], codebook->u, codebook->v);
+
+		putPixelRaw(rows[0] + 2, codebook->y[1], codebook->u, codebook->v);
+		putPixelRaw(rows[0] + 3, codebook->y[1], codebook->u, codebook->v);
+		putPixelRaw(rows[1] + 2, codebook->y[1], codebook->u, codebook->v);
+		putPixelRaw(rows[1] + 3, codebook->y[1], codebook->u, codebook->v);
+
+		putPixelRaw(rows[2] + 0, codebook->y[2], codebook->u, codebook->v);
+		putPixelRaw(rows[2] + 1, codebook->y[2], codebook->u, codebook->v);
+		putPixelRaw(rows[3] + 0, codebook->y[2], codebook->u, codebook->v);
+		putPixelRaw(rows[3] + 1, codebook->y[2], codebook->u, codebook->v);
+
+		putPixelRaw(rows[2] + 2, codebook->y[3], codebook->u, codebook->v);
+		putPixelRaw(rows[2] + 3, codebook->y[3], codebook->u, codebook->v);
+		putPixelRaw(rows[3] + 2, codebook->y[3], codebook->u, codebook->v);
+		putPixelRaw(rows[3] + 3, codebook->y[3], codebook->u, codebook->v);
+	}
+
+	void decodeBlock4(uint8_t (&codebookIndex)[4], CinepakStrip &strip, uint16_t *(&rows)[4])
+	{
+		// log_i("CodebookConverterRaw.decodeBlock4()");
+		CinepakCodebook *codebook1 = &(strip.v4_codebook[codebookIndex[0]]);
+		putPixelRaw(rows[0] + 0, codebook1->y[0], codebook1->u, codebook1->v);
+		putPixelRaw(rows[0] + 1, codebook1->y[1], codebook1->u, codebook1->v);
+		putPixelRaw(rows[1] + 0, codebook1->y[2], codebook1->u, codebook1->v);
+		putPixelRaw(rows[1] + 1, codebook1->y[3], codebook1->u, codebook1->v);
+
+		CinepakCodebook *codebook2 = &(strip.v4_codebook[codebookIndex[1]]);
+		putPixelRaw(rows[0] + 2, codebook2->y[0], codebook2->u, codebook2->v);
+		putPixelRaw(rows[0] + 3, codebook2->y[1], codebook2->u, codebook2->v);
+		putPixelRaw(rows[1] + 2, codebook2->y[2], codebook2->u, codebook2->v);
+		putPixelRaw(rows[1] + 3, codebook2->y[3], codebook2->u, codebook2->v);
+
+		CinepakCodebook *codebook3 = &(strip.v4_codebook[codebookIndex[2]]);
+		putPixelRaw(rows[2] + 0, codebook3->y[0], codebook3->u, codebook3->v);
+		putPixelRaw(rows[2] + 1, codebook3->y[1], codebook3->u, codebook3->v);
+		putPixelRaw(rows[3] + 0, codebook3->y[2], codebook3->u, codebook3->v);
+		putPixelRaw(rows[3] + 1, codebook3->y[3], codebook3->u, codebook3->v);
+
+		CinepakCodebook *codebook4 = &(strip.v4_codebook[codebookIndex[3]]);
+		putPixelRaw(rows[2] + 2, codebook4->y[0], codebook4->u, codebook4->v);
+		putPixelRaw(rows[2] + 3, codebook4->y[1], codebook4->u, codebook4->v);
+		putPixelRaw(rows[3] + 2, codebook4->y[2], codebook4->u, codebook4->v);
+		putPixelRaw(rows[3] + 3, codebook4->y[3], codebook4->u, codebook4->v);
 	}
 
 	void decodeVectors(FrameData &stream, uint16_t strip, uint8_t chunkID, uint32_t chunkSize)
@@ -523,8 +467,8 @@ private:
 							return;
 
 						// Get the codebook
-						uint8_t codebookIndex = stream.readByte();
-						CodebookConverterRaw::decodeBlock1(codebookIndex, _curFrame.strips[strip], iy, _clipTable, _colorMap);
+						uint8_t codebookIndex = stream.readUint8();
+						decodeBlock1(codebookIndex, _curFrame.strips[strip], iy);
 					}
 					else if (flag & mask)
 					{
@@ -533,7 +477,7 @@ private:
 
 						uint8_t codebookIndex[4];
 						stream.read(codebookIndex, 4);
-						CodebookConverterRaw::decodeBlock4(codebookIndex, _curFrame.strips[strip], iy, _clipTable, _colorMap);
+						decodeBlock4(codebookIndex, _curFrame.strips[strip], iy);
 					}
 				}
 
