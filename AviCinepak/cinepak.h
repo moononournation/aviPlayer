@@ -52,7 +52,7 @@ public:
 	}
 	void read(uint8_t *dst, size_t len)
 	{
-		while (--len)
+		while (len--)
 		{
 			*dst++ = _buffer[_pos++];
 		}
@@ -100,7 +100,7 @@ struct Surface
 	{
 		this->w = w;
 		this->h = h;
-		this->pixels = malloc(w * h * 2);
+		this->pixels = malloc(w * h * sizeof(uint16_t));
 	}
 
 	void free()
@@ -348,6 +348,7 @@ private:
 				{
 					codebook[i].u = stream.readUint8();
 					codebook[i].v = stream.readUint8();
+					// log_i("codebook[i].y: %d, %d, %d, %d, u: %d, v: %d", codebook[i].y[0], codebook[i].y[1], codebook[i].y[2], codebook[i].y[3], codebook[i].u, codebook[i].v);
 				}
 				else
 				{
@@ -363,16 +364,20 @@ private:
 
 	void putPixelRaw(uint16_t *dst, uint8_t y, int8_t u, int8_t v)
 	{
-		uint8_t r, g, b;
-		r = _clipTable[y + (v << 1)];
-		g = _clipTable[y - (u >> 1) - v];
-		b = _clipTable[y + (u << 1)];
-		*dst = ((( 0xF8 & r) << 8) | ((0xFC & g) << 3) | ((b) >> 3));
+		uint8_t r = _clipTable[y + (v << 1)];
+		uint8_t g = _clipTable[y - (u >> 1) - v];
+		uint8_t b = _clipTable[y + (u << 1)];
+		// *dst = (((0xF8 & r) << 8) | ((0xFC & g) << 3) | ((b) >> 3));
+		*dst = (
+			((0xF8 & r)) | ((g) >> 5)
+			 | ((0x1C & g) << 11) | ((0xF8 & b) << 5)
+			);
 	}
 
 	void decodeBlock1(uint8_t codebookIndex, CinepakStrip &strip, uint16_t *(&rows)[4])
 	{
 		// log_i("CodebookConverterRaw.decodeBlock1()");
+
 		CinepakCodebook *codebook = &(strip.v1_codebook[codebookIndex]);
 		putPixelRaw(rows[0] + 0, codebook->y[0], codebook->u, codebook->v);
 		putPixelRaw(rows[0] + 1, codebook->y[0], codebook->u, codebook->v);
@@ -395,9 +400,10 @@ private:
 		putPixelRaw(rows[3] + 3, codebook->y[3], codebook->u, codebook->v);
 	}
 
-	void decodeBlock4(uint8_t (&codebookIndex)[4], CinepakStrip &strip, uint16_t *(&rows)[4])
+	void decodeBlock4(uint8_t *codebookIndex, CinepakStrip &strip, uint16_t *(&rows)[4])
 	{
 		// log_i("CodebookConverterRaw.decodeBlock4()");
+
 		CinepakCodebook *codebook1 = &(strip.v4_codebook[codebookIndex[0]]);
 		putPixelRaw(rows[0] + 0, codebook1->y[0], codebook1->u, codebook1->v);
 		putPixelRaw(rows[0] + 1, codebook1->y[1], codebook1->u, codebook1->v);
