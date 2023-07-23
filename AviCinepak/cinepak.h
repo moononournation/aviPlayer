@@ -368,10 +368,7 @@ private:
 		uint8_t g = _clipTable[y - (u >> 1) - v];
 		uint8_t b = _clipTable[y + (u << 1)];
 		// *dst = (((0xF8 & r) << 8) | ((0xFC & g) << 3) | ((b) >> 3));
-		*dst = (
-			((0xF8 & r)) | ((g) >> 5)
-			 | ((0x1C & g) << 11) | ((0xF8 & b) << 5)
-			);
+		*dst = (((0xF8 & r)) | ((g) >> 5) | ((0x1C & g) << 11) | ((0xF8 & b) << 5));
 	}
 
 	void decodeBlock1(uint8_t codebookIndex, CinepakStrip &strip, uint16_t *(&rows)[4])
