@@ -43,7 +43,6 @@ Arduino_GFX *gfx = new Arduino_ST7796(bus, 4 /* RST */, 3 /* rotation */, true /
 
 #include "cinepak.h"
 CinepakDecoder decoder;
-FrameData frame;
 
 // microSD card
 #define SD_SCK 39
@@ -95,8 +94,8 @@ void setup()
     aChunks = AVI_audio_chunks(a);
     Serial.printf("Audio channels: %d, bits: %d, format: %d, rate: %d, bytes: %d, chunks: %d\n", aChans, aBits, aFormat, aRate, aBytes, aChunks);
 
-    vidbuf = (char *)malloc(estimateBufferSize);
-    audbuf = (char *)malloc(1024);
+    vidbuf = (char *)heap_caps_malloc(estimateBufferSize, MALLOC_CAP_8BIT);
+    audbuf = (char *)heap_caps_malloc(1024, MALLOC_CAP_8BIT);
 
     isStopped = false;
     start_ms = millis();
@@ -128,8 +127,7 @@ void loop()
           actual_video_size = AVI_read_frame(a, vidbuf, &iskeyframe);
           // Serial.printf("frame: %d, iskeyframe: %d, video_bytes: %d, actual_video_size: %d, audio_bytes: %d, ESP.getFreeHeap(): %d\n", curr_frame, iskeyframe, video_bytes, actual_video_size, audio_bytes, ESP.getFreeHeap());
 
-          frame.setData((uint8_t *)vidbuf, actual_video_size);
-          Surface *surface = decoder.decodeFrame(frame);
+          Surface *surface = decoder.decodeFrame((uint8_t *)vidbuf, actual_video_size);
           // Serial.printf("w: %d, h: %d\n", surface->w, surface->h);
           gfx->draw16bitBeRGBBitmap(0, 0, (uint16_t *)surface->pixels, surface->w, surface->h);
         }
@@ -141,7 +139,7 @@ void loop()
       else
       {
         ++skipped_frames;
-        Serial.printf("Skip frame %d > %d\n", millis(), next_frame_ms);
+        // Serial.printf("Skip frame %d > %d\n", millis(), next_frame_ms);
       }
 
       ++curr_frame;
