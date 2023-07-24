@@ -24,6 +24,7 @@ static bool isStopped = true;
 static int curr_frame = 0;
 static long curr_chunk = 0;
 static int skipped_frames = 0;
+static bool skipped_last_frame = false;
 static unsigned long start_ms, next_frame_ms;
 
 #include <Arduino_GFX_Library.h>
@@ -127,9 +128,17 @@ void loop()
           actual_video_size = AVI_read_frame(a, vidbuf, &iskeyframe);
           // Serial.printf("frame: %d, iskeyframe: %d, video_bytes: %d, actual_video_size: %d, audio_bytes: %d, ESP.getFreeHeap(): %d\n", curr_frame, iskeyframe, video_bytes, actual_video_size, audio_bytes, ESP.getFreeHeap());
 
-          Surface *surface = decoder.decodeFrame((uint8_t *)vidbuf, actual_video_size);
-          // Serial.printf("w: %d, h: %d\n", surface->w, surface->h);
-          gfx->draw16bitBeRGBBitmap(0, 0, (uint16_t *)surface->pixels, surface->w, surface->h);
+          if ((!skipped_last_frame) || iskeyframe)
+          {
+            skipped_last_frame = false;
+            Surface *surface = decoder.decodeFrame((uint8_t *)vidbuf, actual_video_size);
+            // Serial.printf("w: %d, h: %d\n", surface->w, surface->h);
+            gfx->draw16bitBeRGBBitmap(0, 0, (uint16_t *)surface->pixels, surface->w, surface->h);
+          }
+          else
+          {
+            ++skipped_frames;
+          }
         }
         while (millis() < next_frame_ms)
         {
@@ -139,6 +148,7 @@ void loop()
       else
       {
         ++skipped_frames;
+        skipped_last_frame = true;
         // Serial.printf("Skip frame %d > %d\n", millis(), next_frame_ms);
       }
 
