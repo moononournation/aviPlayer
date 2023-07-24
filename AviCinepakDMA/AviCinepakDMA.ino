@@ -65,7 +65,7 @@ void setup()
   Serial.begin(115200);
   // Serial.setDebugOutput(true);
   // while(!Serial);
-  Serial.println("AviCinepak");
+  Serial.println("AviCinepakDMA");
 
   gfx->begin();
   gfx->fillScreen(BLACK);
