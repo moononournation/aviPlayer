@@ -81,7 +81,6 @@ static void mp3_player_task(void *pvParam)
     long w;
     do
     {
-        total_read_audio_ms += millis() - ms;
         ms = millis();
 
         p = audbuf;
