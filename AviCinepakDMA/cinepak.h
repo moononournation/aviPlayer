@@ -21,44 +21,12 @@
  *
  */
 
+#define BIG_ENDIAN_PIXEL
+#define USE_DRAW_CALLBACK
+
+#ifdef USE_DRAW_CALLBACK
 typedef void(DRAW_CALLBACK)(uint16_t x, uint16_t y, uint16_t *p, uint16_t w, uint16_t h);
-
-struct Rect
-{
-	int16_t top, left;						  /*!< The point at the top left of the rectangle (part of the Rect). */
-	int16_t bottom, right;					  /*!< The point at the bottom right of the rectangle (not part of the Rect). */
-	int16_t width() { return right - left; }  /*!< Return the width of a rectangle. */
-	int16_t height() { return bottom - top; } /*!< Return the height of a rectangle. */
-};
-
-struct Surface
-{
-	int16_t w;
-	int16_t h;
-	void *pixels;
-
-	void create(int16_t w, int16_t h)
-	{
-		this->w = w;
-		this->h = h;
-		this->pixels = malloc(w * h * sizeof(uint16_t));
-	}
-
-	void free()
-	{
-		::free(pixels);
-		pixels = 0;
-		w = h = 0;
-	}
-};
-
-struct CinepakStrip
-{
-	uint16_t id;
-	uint16_t length;
-	Rect rect;
-	uint16_t v1_codebook[1024], v4_codebook[1024];
-};
+#endif
 
 /**
  * Cinepak decoder.
@@ -73,7 +41,6 @@ class CinepakDecoder
 public:
 	CinepakDecoder()
 	{
-		_strips = 0;
 		_y = 0;
 
 		// Create a lookup for the clip function
@@ -95,74 +62,63 @@ public:
 
 	~CinepakDecoder()
 	{
-		delete[] _strips;
 		delete[] _clipTableBuf;
 	}
 
+#ifdef USE_DRAW_CALLBACK
 	void decodeFrame(uint8_t *data, size_t data_size, uint16_t *output_buf, size_t output_buf_size, DRAW_CALLBACK *draw, bool iskeyframe)
+#else
+	void decodeFrame(uint8_t *data, size_t data_size, uint16_t *output_buf, size_t output_buf_size)
+#endif
 	{
 		_data = data;
 		_data_size = data_size;
 		_data_pos = 0;
 		_output_buf = output_buf;
 		_output_buf_size = output_buf_size;
+#ifdef USE_DRAW_CALLBACK
 		_draw = draw;
 		_iskeyframe = iskeyframe;
+#endif
 
 		_flags = readUint8();
-		_length = (readUint8() << 16);
-		_length |= readUint16BE();
+		_length = readUint24BE();
 		_width = readUint16BE();
 		_height = readUint16BE();
 		_stripCount = readUint16BE();
 
 		// log_i("Cinepak Frame: Width = %d, Height = %d, Strip Count = %d", _width, _height, _stripCount);
 
-		if (!_strips)
-		{
-			_strips = new CinepakStrip[_stripCount];
-		}
-
 		// Borrowed from FFMPEG. This should cut out the extra data Cinepak for Sega has (which is useless).
 		// The theory behind this is that this is here to confuse standard Cinepak decoders. But, we won't let that happen! ;)
 		if (_length != (uint32_t)_data_size)
 		{
 			if (readUint16BE() == 0xFE00)
-				readUint32BE();
+			{
+				_data_pos += 4;
+			}
 			else if ((_data_size % _length) == 0)
+			{
 				_data_pos -= 2;
+			}
 		}
 
 		_y = 0;
 
 		for (uint16_t i = 0; i < _stripCount; i++)
 		{
-			if (i > 0 && !(_flags & 1))
-			{ // Use codebooks from last strip
-
-				for (uint16_t j = 0; j < 256; j++)
-				{
-					_strips[i].v1_codebook[j] = _strips[i - 1].v1_codebook[j];
-					_strips[i].v4_codebook[j] = _strips[i - 1].v4_codebook[j];
-				}
-			}
-
-			_strips[i].id = readUint16BE();
-			_strips[i].length = readUint16BE() - 12; // Subtract the 12 uint8_t header
-			_strips[i].rect.top = _y;
+			_data_pos += 2;						 // Ignore, substitute with our own.
+			_strip_length = readUint16BE() - 12; // Subtract the 12 uint8_t header
+			_strip_top = _y;
 			_data_pos += 2; // Ignore, substitute with our own.
-			_strips[i].rect.left = 0;
 			_data_pos += 2; // Ignore, substitute with our own.
-			_strips[i].rect.bottom = _y + readUint16BE();
-			_strips[i].rect.right = _width;
+			_strip_height = readUint16BE();
+			_strip_bottom = _y + _strip_height;
 			_data_pos += 2; // Ignore, substitute with our own.
-
-			// Sanity check. Because Cinepak is based on 4x4 blocks, the width and height of each strip needs to be divisible by 4.
-			assert(!(_strips[i].rect.width() % 4) && !(_strips[i].rect.height() % 4));
 
 			uint32_t pos = _data_pos;
 
-			while ((uint32_t)_data_pos < (pos + _strips[i].length) && (_data_pos < (_data_size - 1)))
+			while ((uint32_t)_data_pos < (pos + _strip_length) && (_data_pos < (_data_size - 1)))
 			{
 				uint8_t chunkID = readUint8();
 
@@ -170,8 +126,7 @@ public:
 					break;
 
 				// Chunk Size is 24-bit, ignore the first 4 bytes
-				uint32_t chunkSize = readUint8() << 16;
-				chunkSize += readUint16BE() - 4;
+				uint32_t chunkSize = readUint24BE() - 4;
 
 				int32_t startPos = _data_pos;
 
@@ -181,18 +136,18 @@ public:
 				case 0x21:
 				case 0x24:
 				case 0x25:
-					loadCodebook(_strips[i].v4_codebook, chunkID, chunkSize);
+					loadCodebook(_v4_codebook, chunkID, chunkSize);
 					break;
 				case 0x22:
 				case 0x23:
 				case 0x26:
 				case 0x27:
-					loadCodebook(_strips[i].v1_codebook, chunkID, chunkSize);
+					loadCodebook(_v1_codebook, chunkID, chunkSize);
 					break;
 				case 0x30:
 				case 0x31:
 				case 0x32:
-					decodeVectors(i, chunkID, chunkSize);
+					decodeVectors(chunkID, chunkSize);
 					break;
 				default:
 					log_i("Unknown Cinepak chunk ID %02x", chunkID);
@@ -203,7 +158,7 @@ public:
 					_data_pos = startPos + chunkSize;
 			}
 
-			_y = _strips[i].rect.bottom;
+			_y = _strip_bottom;
 		}
 
 		return;
@@ -215,15 +170,22 @@ private:
 	size_t _data_pos;
 	uint16_t *_output_buf;
 	size_t _output_buf_size;
+#ifdef USE_DRAW_CALLBACK
 	DRAW_CALLBACK *_draw;
 	bool _iskeyframe;
+#endif
 
 	uint8_t _flags;
 	uint32_t _length;
 	uint16_t _width;
 	uint16_t _height;
 	uint16_t _stripCount;
-	CinepakStrip *_strips;
+
+	int16_t _strip_top;
+	int16_t _strip_bottom;
+	int16_t _strip_height;
+	uint16_t _strip_length;
+	uint16_t _v1_codebook[1024], _v4_codebook[1024];
 
 	int32_t _y;
 	uint8_t *_clipTable, *_clipTableBuf;
@@ -238,6 +200,14 @@ private:
 		uint16_t a = _data[_data_pos++];
 		uint16_t b = _data[_data_pos++];
 		return (a << 8) | b;
+	}
+
+	inline uint16_t readUint24BE()
+	{
+		uint16_t a = _data[_data_pos++];
+		uint16_t b = _data[_data_pos++];
+		uint16_t c = _data[_data_pos++];
+		return (a << 16) | (b << 8) | c;
 	}
 
 	inline uint32_t readUint32BE()
@@ -260,11 +230,14 @@ private:
 		uint8_t r = _clipTable[y + (v << 1)];
 		uint8_t g = _clipTable[y - (u >> 1) - v];
 		uint8_t b = _clipTable[y + (u << 1)];
-		// *dst = (((0xF8 & r) << 8) | ((0xFC & g) << 3) | ((b) >> 3));
+#ifdef BIG_ENDIAN_PIXEL
 		*dst = (((0xF8 & r)) | ((g) >> 5) | ((0x1C & g) << 11) | ((0xF8 & b) << 5));
+#else
+		*dst = (((0xF8 & r) << 8) | ((0xFC & g) << 3) | ((b) >> 3));
+#endif
 	}
 
-	void loadCodebook(uint16_t *codebook, uint8_t chunkID, uint32_t chunkSize)
+	void loadCodebook(uint16_t *codeblock, uint8_t chunkID, uint32_t chunkSize)
 	{
 		// log_i("loadCodebook(%d, %d, %d)", chunkID, chunkSize);
 
@@ -290,7 +263,7 @@ private:
 
 				uint8_t *y = _data + _data_pos;
 				_data_pos += 4;
-				uint16_t *p = codebook + (i << 2);
+				uint16_t *p = codeblock + (i << 2);
 				if (n == 6)
 				{
 					int8_t u = readUint8();
@@ -314,75 +287,31 @@ private:
 		}
 	}
 
-	void decodeBlock1(uint8_t codebookIndex, CinepakStrip &strip, uint16_t *(&rows)[4])
-	{
-		// log_i("CodebookConverterRaw.decodeBlock1()");
-
-		uint16_t *codebook = &(strip.v1_codebook[codebookIndex << 2]);
-		rows[0][0] = codebook[0];
-		rows[0][1] = codebook[0];
-		rows[1][0] = codebook[0];
-		rows[1][1] = codebook[0];
-
-		rows[0][2] = codebook[1];
-		rows[0][3] = codebook[1];
-		rows[1][2] = codebook[1];
-		rows[1][3] = codebook[1];
-
-		rows[2][0] = codebook[2];
-		rows[2][1] = codebook[2];
-		rows[3][0] = codebook[2];
-		rows[3][1] = codebook[2];
-
-		rows[2][2] = codebook[3];
-		rows[2][3] = codebook[3];
-		rows[3][2] = codebook[3];
-		rows[3][3] = codebook[3];
-	}
-
-	void decodeBlock4(uint8_t *codebookIndex, CinepakStrip &strip, uint16_t *(&rows)[4])
-	{
-		// log_i("CodebookConverterRaw.decodeBlock4()");
-
-		uint16_t *codebook = &(strip.v4_codebook[codebookIndex[0] << 2]);
-		rows[0][0] = codebook[0];
-		rows[0][1] = codebook[1];
-		rows[1][0] = codebook[2];
-		rows[1][1] = codebook[3];
-
-		codebook = &(strip.v4_codebook[codebookIndex[1] << 2]);
-		rows[0][2] = codebook[0];
-		rows[0][3] = codebook[1];
-		rows[1][2] = codebook[2];
-		rows[1][3] = codebook[3];
-
-		codebook = &(strip.v4_codebook[codebookIndex[2] << 2]);
-		rows[2][0] = codebook[0];
-		rows[2][1] = codebook[1];
-		rows[3][0] = codebook[2];
-		rows[3][1] = codebook[3];
-
-		codebook = &(strip.v4_codebook[codebookIndex[3] << 2]);
-		rows[2][2] = codebook[0];
-		rows[2][3] = codebook[1];
-		rows[3][2] = codebook[2];
-		rows[3][3] = codebook[3];
-	}
-
-	void decodeVectors(uint16_t strip, uint8_t chunkID, uint32_t chunkSize)
+	void decodeVectors(uint8_t chunkID, uint32_t chunkSize)
 	{
 		uint32_t flag = 0, mask = 0;
-		uint16_t *iy[4];
+		uint16_t *row0;
+		uint16_t *row1;
+		uint16_t *row2;
+		uint16_t *row3;
 		int32_t startPos = _data_pos;
+		uint16_t *codeblock;
 
-		for (uint16_t y = _strips[strip].rect.top; y < _strips[strip].rect.bottom; y += 4)
+		for (uint16_t y = _strip_top; y < _strip_bottom; y += 4)
 		{
-			iy[0] = _output_buf;
-			iy[1] = iy[0] + (_iskeyframe ? _width : 4);
-			iy[2] = iy[1] + (_iskeyframe ? _width : 4);
-			iy[3] = iy[2] + (_iskeyframe ? _width : 4);
+#ifdef USE_DRAW_CALLBACK
+			row0 = _output_buf;
+			row1 = row0 + (_iskeyframe ? _width : 4);
+			row2 = row1 + (_iskeyframe ? _width : 4);
+			row3 = row2 + (_iskeyframe ? _width : 4);
+#else
+			row0 = _output_buf + (y * _width);
+			row1 = row0 + _width;
+			row2 = row1 + _width;
+			row3 = row2 + _width;
+#endif
 
-			for (uint16_t x = _strips[strip].rect.left; x < _strips[strip].rect.right; x += 4)
+			for (uint16_t x = 0; x < _width; x += 4)
 			{
 				if ((chunkID & 0x01) && !(mask >>= 1))
 				{
@@ -409,40 +338,94 @@ private:
 						if ((_data_pos - startPos + 1) > (int32_t)chunkSize)
 							return;
 
-						// Get the codebook
-						uint8_t codebookIndex = readUint8();
-						decodeBlock1(codebookIndex, _strips[strip], iy);
+						// Get the codeblock
+						codeblock = _v1_codebook + (readUint8() << 2);
+						uint16_t codebit = *codeblock++;
+						row0[0] = codebit;
+						row0[1] = codebit;
+						row1[0] = codebit;
+						row1[1] = codebit;
+
+						codebit = *codeblock++;
+						row0[2] = codebit;
+						row0[3] = codebit;
+						row1[2] = codebit;
+						row1[3] = codebit;
+
+						codebit = *codeblock++;
+						row2[0] = codebit;
+						row2[1] = codebit;
+						row3[0] = codebit;
+						row3[1] = codebit;
+
+						codebit = *codeblock;
+						row2[2] = codebit;
+						row2[3] = codebit;
+						row3[2] = codebit;
+						row3[3] = codebit;
+
+#ifdef USE_DRAW_CALLBACK
 						if (!_iskeyframe)
 						{
 							_draw(x, y, _output_buf, 4, 4);
 						}
+#endif
 					}
 					else if (flag & mask)
 					{
 						if ((_data_pos - startPos + 4) > (int32_t)chunkSize)
 							return;
 
-						uint8_t *codebookIndex;
-						codebookIndex = _data + _data_pos;
-						_data_pos += 4;
-						decodeBlock4(codebookIndex, _strips[strip], iy);
+						codeblock = _v4_codebook + (readUint8() << 2);
+						row0[0] = *codeblock++;
+						row0[1] = *codeblock++;
+						row1[0] = *codeblock++;
+						row1[1] = *codeblock;
+
+						codeblock = _v4_codebook + (readUint8() << 2);
+						row0[2] = *codeblock++;
+						row0[3] = *codeblock++;
+						row1[2] = *codeblock++;
+						row1[3] = *codeblock;
+
+						codeblock = _v4_codebook + (readUint8() << 2);
+						row2[0] = *codeblock++;
+						row2[1] = *codeblock++;
+						row3[0] = *codeblock++;
+						row3[1] = *codeblock;
+
+						codeblock = _v4_codebook + (readUint8() << 2);
+						row2[2] = *codeblock++;
+						row2[3] = *codeblock++;
+						row3[2] = *codeblock++;
+						row3[3] = *codeblock;
+
+#ifdef USE_DRAW_CALLBACK
 						if (!_iskeyframe)
 						{
 							_draw(x, y, _output_buf, 4, 4);
 						}
+#endif
 					}
 				}
 
+#ifdef USE_DRAW_CALLBACK
 				if (_iskeyframe)
+#endif
 				{
-					for (uint8_t i = 0; i < 4; i++)
-						iy[i] += 4;
+					row0 += 4;
+					row1 += 4;
+					row2 += 4;
+					row3 += 4;
 				}
 			}
+
+#ifdef USE_DRAW_CALLBACK
 			if (_iskeyframe)
 			{
 				_draw(0, y, _output_buf, _width, 4);
 			}
+#endif
 		}
 	}
 };

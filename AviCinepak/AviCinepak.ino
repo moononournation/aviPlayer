@@ -3,30 +3,21 @@
  * Arduino_GFX: https://github.com/moononournation/Arduino_GFX.git
  * avilib: https://github.com/lanyou1900/avilib.git
  */
+
+const char *root = "/root";
+const char *avi_file = "/root/AviMp3Cinepak240p15fps.avi";
+
+#include <WiFi.h>
 #include <FFat.h>
 #include <LittleFS.h>
 #include <SD_MMC.h>
-const char *root = "/root";
-const char *avi_file = "/root/AviMp3Cinepak240p15fps.avi";
 
 extern "C"
 {
 #include <avilib.h>
 }
-static avi_t *a;
-static long frames, estimateBufferSize, aRate, aBytes, aChunks, actual_video_size;
-static int w, h, aChans, aBits, aFormat;
-static double fr;
-static char *compressor;
-static char *vidbuf;
-static char *audbuf;
-static bool isStopped = true;
-static int curr_frame = 0;
-static long curr_chunk = 0;
-static int skipped_frames = 0;
-static bool skipped_last_frame = false;
-static unsigned long start_ms, next_frame_ms;
 
+/* Arduino_GFX */
 #include <Arduino_GFX_Library.h>
 
 // #define GFX_BL DF_GFX_BL // default backlight pin, you may replace DF_GFX_BL to actual backlight pin
@@ -42,8 +33,20 @@ Arduino_DataBus *bus = new Arduino_ESP32LCD8(
     9 /* D0 */, 46 /* D1 */, 3 /* D2 */, 8 /* D3 */, 18 /* D4 */, 17 /* D5 */, 16 /* D6 */, 15 /* D7 */);
 Arduino_GFX *gfx = new Arduino_ST7796(bus, 4 /* RST */, 3 /* rotation */, true /* IPS */);
 
-#include "cinepak.h"
-CinepakDecoder decoder;
+/* variables */
+static avi_t *a;
+static long frames, estimateBufferSize, aRate, aBytes, aChunks, actual_video_size;
+static int w, h, aChans, aBits, aFormat;
+static double fr;
+static char *compressor;
+static char *vidbuf;
+static char *audbuf;
+static bool isStopped = true;
+static int curr_frame = 0;
+static long curr_chunk = 0;
+static int skipped_frames = 0;
+static bool skipped_last_frame = false;
+static unsigned long start_ms, next_frame_ms;
 
 // microSD card
 #define SD_SCK 39
@@ -53,6 +56,8 @@ CinepakDecoder decoder;
 
 void setup()
 {
+  WiFi.mode(WIFI_OFF);
+
   Serial.begin(115200);
   // Serial.setDebugOutput(true);
   // while(!Serial);
@@ -97,6 +102,8 @@ void setup()
 
     vidbuf = (char *)heap_caps_malloc(estimateBufferSize, MALLOC_CAP_8BIT);
     audbuf = (char *)heap_caps_malloc(1024, MALLOC_CAP_8BIT);
+    output_buf_size = w * h * 2;
+    output_buf = (uint16_t *)malloc(output_buf_size);
 
     isStopped = false;
     start_ms = millis();
@@ -131,9 +138,8 @@ void loop()
           if ((!skipped_last_frame) || iskeyframe)
           {
             skipped_last_frame = false;
-            Surface *surface = decoder.decodeFrame((uint8_t *)vidbuf, actual_video_size);
-            // Serial.printf("w: %d, h: %d\n", surface->w, surface->h);
-            gfx->draw16bitBeRGBBitmap(0, 0, (uint16_t *)surface->pixels, surface->w, surface->h);
+            decoder.decodeFrame((uint8_t *)vidbuf, actual_video_size, output_buf, output_buf_size);
+            gfx->draw16bitBeRGBBitmap(0, 0, output_buf, w, h);
           }
           else
           {

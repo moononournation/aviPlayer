@@ -3,32 +3,21 @@
  * Arduino_GFX: https://github.com/moononournation/Arduino_GFX.git
  * avilib: https://github.com/lanyou1900/avilib.git
  */
+
+const char *root = "/root";
+const char *avi_file = "/root/AviMp3Cinepak320p30fps.avi";
+
+#include <WiFi.h>
 #include <FFat.h>
 #include <LittleFS.h>
 #include <SD_MMC.h>
-const char *root = "/root";
-const char *avi_file = "/root/AviMp3Cinepak320p30fps.avi";
 
 extern "C"
 {
 #include <avilib.h>
 }
-static avi_t *a;
-static long frames, estimateBufferSize, aRate, aBytes, aChunks, actual_video_size;
-static int w, h, aChans, aBits, aFormat;
-static double fr;
-static char *compressor;
-static char *vidbuf;
-static char *audbuf;
-static uint16_t *output_buf;
-static size_t output_buf_size;
-static bool isStopped = true;
-static int curr_frame = 0;
-static long curr_chunk = 0;
-static int skipped_frames = 0;
-static bool skipped_last_frame = false;
-static unsigned long start_ms, next_frame_ms;
 
+/* Arduino_GFX */
 #include <Arduino_GFX_Library.h>
 
 // #define GFX_BL DF_GFX_BL // default backlight pin, you may replace DF_GFX_BL to actual backlight pin
@@ -47,6 +36,23 @@ Arduino_GFX *gfx = new Arduino_ST7796(bus, 4 /* RST */, 3 /* rotation */, true /
 #include "cinepak.h"
 CinepakDecoder decoder;
 
+/* variables */
+static avi_t *a;
+static long frames, estimateBufferSize, aRate, aBytes, aChunks, actual_video_size;
+static int w, h, aChans, aBits, aFormat;
+static double fr;
+static char *compressor;
+static char *vidbuf;
+static char *audbuf;
+static uint16_t *output_buf;
+static size_t output_buf_size;
+static bool isStopped = true;
+static int curr_frame = 0;
+static long curr_chunk = 0;
+static int skipped_frames = 0;
+static bool skipped_last_frame = false;
+static unsigned long start_ms, next_frame_ms;
+
 // microSD card
 #define SD_SCK 39
 #define SD_MISO 38
@@ -62,6 +68,8 @@ static void draw(uint16_t x, uint16_t y, uint16_t *p, uint16_t w, uint16_t h)
 
 void setup()
 {
+  WiFi.mode(WIFI_OFF);
+
   Serial.begin(115200);
   // Serial.setDebugOutput(true);
   // while(!Serial);
@@ -107,7 +115,6 @@ void setup()
     vidbuf = (char *)heap_caps_malloc(estimateBufferSize, MALLOC_CAP_8BIT);
     audbuf = (char *)heap_caps_malloc(1024, MALLOC_CAP_8BIT);
     output_buf_size = w * 4;
-    // output_buf = (uint16_t *)malloc(output_buf_size * sizeof(uint16_t));
     output_buf = (uint16_t *)heap_caps_malloc(output_buf_size * sizeof(uint16_t), MALLOC_CAP_DMA);
 
     isStopped = false;
@@ -127,33 +134,33 @@ void loop()
 
       // if (millis() < next_frame_ms) // check show frame or skip frame
       // {
-        AVI_set_video_position(a, curr_frame);
+      AVI_set_video_position(a, curr_frame);
 
-        int iskeyframe;
-        long video_bytes = AVI_frame_size(a, curr_frame);
-        if (video_bytes > estimateBufferSize)
-        {
-          Serial.printf("video_bytes(%d) > estimateBufferSize(%d)\n", video_bytes, estimateBufferSize);
-        }
-        else
-        {
-          actual_video_size = AVI_read_frame(a, vidbuf, &iskeyframe);
-          // Serial.printf("frame: %d, iskeyframe: %d, video_bytes: %d, actual_video_size: %d, audio_bytes: %d, ESP.getFreeHeap(): %d\n", curr_frame, iskeyframe, video_bytes, actual_video_size, audio_bytes, ESP.getFreeHeap());
+      int iskeyframe;
+      long video_bytes = AVI_frame_size(a, curr_frame);
+      if (video_bytes > estimateBufferSize)
+      {
+        Serial.printf("video_bytes(%d) > estimateBufferSize(%d)\n", video_bytes, estimateBufferSize);
+      }
+      else
+      {
+        actual_video_size = AVI_read_frame(a, vidbuf, &iskeyframe);
+        // Serial.printf("frame: %d, iskeyframe: %d, video_bytes: %d, actual_video_size: %d, audio_bytes: %d, ESP.getFreeHeap(): %d\n", curr_frame, iskeyframe, video_bytes, actual_video_size, audio_bytes, ESP.getFreeHeap());
 
-          if ((!skipped_last_frame) || iskeyframe)
-          {
-            skipped_last_frame = false;
-            decoder.decodeFrame((uint8_t *)vidbuf, actual_video_size, output_buf, output_buf_size, draw, iskeyframe);
-          }
-          else
-          {
-            ++skipped_frames;
-          }
-        }
-        while (millis() < next_frame_ms)
-        {
-          vTaskDelay(pdMS_TO_TICKS(1));
-        }
+        // if ((!skipped_last_frame) || iskeyframe)
+        // {
+        //   skipped_last_frame = false;
+        decoder.decodeFrame((uint8_t *)vidbuf, actual_video_size, output_buf, output_buf_size, draw, iskeyframe);
+        // }
+        // else
+        // {
+        //   ++skipped_frames;
+        // }
+      }
+      while (millis() < next_frame_ms)
+      {
+        vTaskDelay(pdMS_TO_TICKS(1));
+      }
       // }
       // else
       // {

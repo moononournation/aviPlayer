@@ -82,8 +82,7 @@ public:
 #endif
 
 		_flags = readUint8();
-		_length = (readUint8() << 16);
-		_length |= readUint16BE();
+		_length = readUint24BE();
 		_width = readUint16BE();
 		_height = readUint16BE();
 		_stripCount = readUint16BE();
@@ -95,9 +94,13 @@ public:
 		if (_length != (uint32_t)_data_size)
 		{
 			if (readUint16BE() == 0xFE00)
-				readUint32BE();
+			{
+				_data_pos += 4;
+			}
 			else if ((_data_size % _length) == 0)
+			{
 				_data_pos -= 2;
+			}
 		}
 
 		_y = 0;
@@ -123,8 +126,7 @@ public:
 					break;
 
 				// Chunk Size is 24-bit, ignore the first 4 bytes
-				uint32_t chunkSize = readUint8() << 16;
-				chunkSize += readUint16BE() - 4;
+				uint32_t chunkSize = readUint24BE() - 4;
 
 				int32_t startPos = _data_pos;
 
@@ -198,6 +200,14 @@ private:
 		uint16_t a = _data[_data_pos++];
 		uint16_t b = _data[_data_pos++];
 		return (a << 8) | b;
+	}
+
+	inline uint16_t readUint24BE()
+	{
+		uint16_t a = _data[_data_pos++];
+		uint16_t b = _data[_data_pos++];
+		uint16_t c = _data[_data_pos++];
+		return (a << 16) | (b << 8) | c;
 	}
 
 	inline uint32_t readUint32BE()
