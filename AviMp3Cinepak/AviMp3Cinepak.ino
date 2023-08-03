@@ -27,18 +27,17 @@ extern "C"
 ///* More display class: https://github.com/moononournation/Arduino_GFX/wiki/Display-Class */
 // Arduino_GFX *gfx = new Arduino_ILI9341(bus, DF_GFX_RST, 3/* rotation */, false /* IPS */);
 
-#define GFX_DEV_DEVICE WZ8048C050
+#define GFX_DEV_DEVICE ESP32_8048S070
 #define GFX_BL 2
 Arduino_ESP32RGBPanel *rgbpanel = new Arduino_ESP32RGBPanel(
-    40 /* DE */, 41 /* VSYNC */, 39 /* HSYNC */, 0 /* PCLK */,
-    45 /* R0 */, 48 /* R1 */, 47 /* R2 */, 21 /* R3 */, 14 /* R4 */,
-    5 /* G0 */, 6 /* G1 */, 7 /* G2 */, 15 /* G3 */, 16 /* G4 */, 4 /* G5 */,
-    8 /* B0 */, 3 /* B1 */, 46 /* B2 */, 9 /* B3 */, 1 /* B4 */,
-    1 /* hsync_polarity */, 8 /* hsync_front_porch */, 8 /* hsync_pulse_width */, 50 /* hsync_back_porch */,
-    1 /* vsync_polarity */, 8 /* vsync_front_porch */, 8 /* vsync_pulse_width */, 50 /* vsync_back_porch */,
-    1 /* pclk_active_neg */, 12000000 /* prefer_speed */);
+    41 /* DE */, 40 /* VSYNC */, 39 /* HSYNC */, 42 /* PCLK */,
+    14 /* R0 */, 21 /* R1 */, 47 /* R2 */, 48 /* R3 */, 45 /* R4 */,
+    9 /* G0 */, 46 /* G1 */, 3 /* G2 */, 8 /* G3 */, 16 /* G4 */, 1 /* G5 */,
+    15 /* B0 */, 7 /* B1 */, 6 /* B2 */, 5 /* B3 */, 4 /* B4 */,
+    0 /* hsync_polarity */, 180 /* hsync_front_porch */, 30 /* hsync_pulse_width */, 16 /* hsync_back_porch */,
+    0 /* vsync_polarity */, 12 /* vsync_front_porch */, 13 /* vsync_pulse_width */, 10 /* vsync_back_porch */);
 Arduino_RGB_Display *gfx = new Arduino_RGB_Display(
-    800 /* width */, 480 /* height */, rgbpanel, 0 /* rotation */, true /* auto_flush */);
+    800 /* width */, 480 /* height */, rgbpanel);
 
 #include "cinepak.h"
 CinepakDecoder decoder;
@@ -57,7 +56,6 @@ static uint16_t *output_buf;
 static size_t output_buf_size;
 static bool isStopped = true;
 static int curr_frame = 0;
-static long curr_chunk = 0;
 static int skipped_frames = 0;
 static bool skipped_last_frame = false;
 static unsigned long start_ms, curr_ms, next_frame_ms;
@@ -73,7 +71,7 @@ static unsigned long total_show_video_ms = 0;
 #define SD_CS 10
 // I2S
 #define I2S_DOUT 17
-#define I2S_BCLK 42
+#define I2S_BCLK 0
 #define I2S_LRCK 18
 
 void setup()

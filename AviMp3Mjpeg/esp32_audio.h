@@ -2,7 +2,7 @@
 
 #include "MP3DecoderHelix.h"
 
-#define GAIN_LEVEL 0.04
+#define GAIN_LEVEL 0.8
 
 static unsigned long total_read_audio_ms = 0;
 static unsigned long total_decode_audio_ms = 0;
@@ -71,7 +71,6 @@ static void audioDataCallback(MP3FrameInfo &info, int16_t *pwm_buffer, size_t le
 }
 
 static libhelix::MP3DecoderHelix _mp3(audioDataCallback);
-static uint8_t _frame[MP3_MAX_FRAME_SIZE];
 static void mp3_player_task(void *pvParam)
 {
     avi_t *a = (avi_t *)pvParam;
