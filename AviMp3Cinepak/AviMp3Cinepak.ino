@@ -37,7 +37,7 @@ Arduino_ESP32RGBPanel *rgbpanel = new Arduino_ESP32RGBPanel(
     0 /* hsync_polarity */, 180 /* hsync_front_porch */, 30 /* hsync_pulse_width */, 16 /* hsync_back_porch */,
     0 /* vsync_polarity */, 12 /* vsync_front_porch */, 13 /* vsync_pulse_width */, 10 /* vsync_back_porch */);
 Arduino_RGB_Display *gfx = new Arduino_RGB_Display(
-    800 /* width */, 480 /* height */, rgbpanel);
+    800 /* width */, 480 /* height */, rgbpanel, 0 /* rotation */, false /* auto_flush */);
 
 #include "cinepak.h"
 CinepakDecoder decoder;
@@ -192,6 +192,7 @@ void loop()
           {
             // skipped_last_frame = false;
             decoder.decodeFrame((uint8_t *)vidbuf, actual_video_size, output_buf, output_buf_size);
+            gfx->flush();
             total_decode_video_ms += millis() - curr_ms;
             curr_ms = millis();
           }
