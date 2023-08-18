@@ -17,21 +17,22 @@ extern "C"
 #include <avilib.h>
 }
 
-/* Arduino_GFX */
+/*******************************************************************************
+ * Start of Arduino_GFX setting
+ ******************************************************************************/
 #include <Arduino_GFX_Library.h>
-
-// #define GFX_BL DF_GFX_BL // default backlight pin, you may replace DF_GFX_BL to actual backlight pin
-///* More data bus class: https://github.com/moononournation/Arduino_GFX/wiki/Data-Bus-Class */
-// Arduino_DataBus *bus = create_default_Arduino_DataBus();
-///* More display class: https://github.com/moononournation/Arduino_GFX/wiki/Display-Class */
-// Arduino_GFX *gfx = new Arduino_ILI9341(bus, DF_GFX_RST, 3/* rotation */, false /* IPS */);
-
 #define GFX_DEV_DEVICE ZX3D50CE02S
 #define GFX_BL 45
 Arduino_DataBus *bus = new Arduino_ESP32LCD8(
     0 /* DC */, GFX_NOT_DEFINED /* CS */, 47 /* WR */, GFX_NOT_DEFINED /* RD */,
     9 /* D0 */, 46 /* D1 */, 3 /* D2 */, 8 /* D3 */, 18 /* D4 */, 17 /* D5 */, 16 /* D6 */, 15 /* D7 */);
 Arduino_GFX *gfx = new Arduino_ST7796(bus, 4 /* RST */, 3 /* rotation */, true /* IPS */);
+/*******************************************************************************
+ * End of Arduino_GFX setting
+ ******************************************************************************/
+
+#include "cinepak.h"
+CinepakDecoder decoder;
 
 /* variables */
 static avi_t *a;
@@ -63,7 +64,15 @@ void setup()
   // while(!Serial);
   Serial.println("AviCinepak");
 
-  gfx->begin();
+#ifdef GFX_EXTRA_PRE_INIT
+  GFX_EXTRA_PRE_INIT();
+#endif
+
+  Serial.println("Init display");
+  if (!gfx->begin())
+  {
+    Serial.println("Init display failed!");
+  }
   gfx->fillScreen(BLACK);
 
 #ifdef GFX_BL
@@ -84,30 +93,33 @@ void setup()
   {
     a = AVI_open_input_file(avi_file, 1);
 
-    frames = AVI_video_frames(a);
-    w = AVI_video_width(a);
-    h = AVI_video_height(a);
-    fr = AVI_frame_rate(a);
-    compressor = AVI_video_compressor(a);
-    estimateBufferSize = w * h * 2 / 5;
-    Serial.printf("AVI frames: %d, %d x %d @ %.2f fps, format: %s, estimateBufferSize: %d, ESP.getFreeHeap(): %d\n", frames, w, h, fr, compressor, estimateBufferSize, ESP.getFreeHeap());
+    if (a)
+    {
+      frames = AVI_video_frames(a);
+      w = AVI_video_width(a);
+      h = AVI_video_height(a);
+      fr = AVI_frame_rate(a);
+      compressor = AVI_video_compressor(a);
+      estimateBufferSize = w * h * 2 / 5;
+      Serial.printf("AVI frames: %d, %d x %d @ %.2f fps, format: %s, estimateBufferSize: %d, ESP.getFreeHeap(): %d\n", frames, w, h, fr, compressor, estimateBufferSize, ESP.getFreeHeap());
 
-    aChans = AVI_audio_channels(a);
-    aBits = AVI_audio_bits(a);
-    aFormat = AVI_audio_format(a);
-    aRate = AVI_audio_rate(a);
-    aBytes = AVI_audio_bytes(a);
-    aChunks = AVI_audio_chunks(a);
-    Serial.printf("Audio channels: %d, bits: %d, format: %d, rate: %d, bytes: %d, chunks: %d\n", aChans, aBits, aFormat, aRate, aBytes, aChunks);
+      aChans = AVI_audio_channels(a);
+      aBits = AVI_audio_bits(a);
+      aFormat = AVI_audio_format(a);
+      aRate = AVI_audio_rate(a);
+      aBytes = AVI_audio_bytes(a);
+      aChunks = AVI_audio_chunks(a);
+      Serial.printf("Audio channels: %d, bits: %d, format: %d, rate: %d, bytes: %d, chunks: %d\n", aChans, aBits, aFormat, aRate, aBytes, aChunks);
 
-    vidbuf = (char *)heap_caps_malloc(estimateBufferSize, MALLOC_CAP_8BIT);
-    audbuf = (char *)heap_caps_malloc(1024, MALLOC_CAP_8BIT);
-    output_buf_size = w * h * 2;
-    output_buf = (uint16_t *)malloc(output_buf_size);
+      vidbuf = (char *)heap_caps_malloc(estimateBufferSize, MALLOC_CAP_8BIT);
+      audbuf = (char *)heap_caps_malloc(1024, MALLOC_CAP_8BIT);
+      output_buf_size = w * h * 2;
+      output_buf = (uint16_t *)malloc(output_buf_size);
 
-    isStopped = false;
-    start_ms = millis();
-    next_frame_ms = start_ms + ((curr_frame + 1) * 1000 / fr);
+      isStopped = false;
+      start_ms = millis();
+      next_frame_ms = start_ms + ((curr_frame + 1) * 1000 / fr);
+    }
   }
 }
 
@@ -120,7 +132,7 @@ void loop()
       long audio_bytes = AVI_audio_size(a, curr_chunk++);
       AVI_read_audio(a, audbuf, audio_bytes);
 
-      if (millis() < next_frame_ms) // check show frame or skip frame
+      // if (millis() < next_frame_ms) // check show frame or skip frame
       {
         AVI_set_video_position(a, curr_frame);
 
@@ -141,22 +153,22 @@ void loop()
             decoder.decodeFrame((uint8_t *)vidbuf, actual_video_size, output_buf, output_buf_size);
             gfx->draw16bitBeRGBBitmap(0, 0, output_buf, w, h);
           }
-          else
-          {
-            ++skipped_frames;
-          }
+          // else
+          // {
+          //   ++skipped_frames;
+          // }
         }
         while (millis() < next_frame_ms)
         {
           vTaskDelay(pdMS_TO_TICKS(1));
         }
       }
-      else
-      {
-        ++skipped_frames;
-        skipped_last_frame = true;
-        // Serial.printf("Skip frame %d > %d\n", millis(), next_frame_ms);
-      }
+      // else
+      // {
+      //   ++skipped_frames;
+      //   skipped_last_frame = true;
+      //   // Serial.printf("Skip frame %d > %d\n", millis(), next_frame_ms);
+      // }
 
       ++curr_frame;
       next_frame_ms = start_ms + ((curr_frame + 1) * 1000 / fr);

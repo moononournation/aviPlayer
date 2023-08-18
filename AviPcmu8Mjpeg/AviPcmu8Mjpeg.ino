@@ -4,16 +4,38 @@
  * avilib: https://github.com/lanyou1900/avilib.git
  * JPEGDEC: https://github.com/bitbank2/JPEGDEC.git
  */
+
+const char *root = "/root";
+const char *avi_file = "/root/AviPcmu8Mjpeg320p10fps.avi";
+
+#include <WiFi.h>
 #include <FFat.h>
 #include <LittleFS.h>
 #include <SD_MMC.h>
-const char *root = "/root";
-const char *avi_file = "/root/AviPcmu8Mjpeg320p10fps.avi";
 
 extern "C"
 {
 #include <avilib.h>
 }
+
+/*******************************************************************************
+ * Start of Arduino_GFX setting
+ ******************************************************************************/
+#include <Arduino_GFX_Library.h>
+#define GFX_DEV_DEVICE ZX3D50CE02S
+#define GFX_BL 45
+Arduino_DataBus *bus = new Arduino_ESP32LCD8(
+    0 /* DC */, GFX_NOT_DEFINED /* CS */, 47 /* WR */, GFX_NOT_DEFINED /* RD */,
+    9 /* D0 */, 46 /* D1 */, 3 /* D2 */, 8 /* D3 */, 18 /* D4 */, 17 /* D5 */, 16 /* D6 */, 15 /* D7 */);
+Arduino_GFX *gfx = new Arduino_ST7796(bus, 4 /* RST */, 3 /* rotation */, true /* IPS */);
+/*******************************************************************************
+ * End of Arduino_GFX setting
+ ******************************************************************************/
+
+#include <JPEGDEC.h>
+JPEGDEC jpegdec;
+
+/* variables */
 static avi_t *a;
 static long frames, estimateBufferSize, aRate, aBytes, aChunks, actual_video_size;
 static int w, h, aChans, aBits, aFormat;
@@ -23,28 +45,9 @@ static char *vidbuf;
 static char *audbuf;
 static bool isStopped = true;
 static int curr_frame = 0;
-static long curr_chunk = 0;
 static int skipped_frames = 0;
 static unsigned long start_ms, next_frame_ms;
 static int audio_feed_per_frame;
-
-#include <Arduino_GFX_Library.h>
-
-// #define GFX_BL DF_GFX_BL // default backlight pin, you may replace DF_GFX_BL to actual backlight pin
-///* More data bus class: https://github.com/moononournation/Arduino_GFX/wiki/Data-Bus-Class */
-// Arduino_DataBus *bus = create_default_Arduino_DataBus();
-///* More display class: https://github.com/moononournation/Arduino_GFX/wiki/Display-Class */
-// Arduino_GFX *gfx = new Arduino_ILI9341(bus, DF_GFX_RST, 3/* rotation */, false /* IPS */);
-
-#define GFX_DEV_DEVICE ZX3D50CE02S
-#define GFX_BL 45
-Arduino_DataBus *bus = new Arduino_ESP32LCD8(
-    0 /* DC */, GFX_NOT_DEFINED /* CS */, 47 /* WR */, GFX_NOT_DEFINED /* RD */,
-    9 /* D0 */, 46 /* D1 */, 3 /* D2 */, 8 /* D3 */, 18 /* D4 */, 17 /* D5 */, 16 /* D6 */, 15 /* D7 */);
-Arduino_GFX *gfx = new Arduino_ST7796(bus, 4 /* RST */, 3 /* rotation */, true /* IPS */);
-
-#include <JPEGDEC.h>
-JPEGDEC jpegdec;
 
 #include "esp32_audio.h"
 // microSD card
@@ -67,12 +70,22 @@ static int drawMCU(JPEGDRAW *pDraw)
 
 void setup()
 {
+  WiFi.mode(WIFI_OFF);
+
   Serial.begin(115200);
   // Serial.setDebugOutput(true);
   // while(!Serial);
   Serial.println("AviPcmu8Mjpeg");
 
-  gfx->begin();
+#ifdef GFX_EXTRA_PRE_INIT
+  GFX_EXTRA_PRE_INIT();
+#endif
+
+  Serial.println("Init display");
+  if (!gfx->begin())
+  {
+    Serial.println("Init display failed!");
+  }
   gfx->fillScreen(BLACK);
 
 #ifdef GFX_BL
@@ -93,39 +106,42 @@ void setup()
   {
     a = AVI_open_input_file(avi_file, 1);
 
-    frames = AVI_video_frames(a);
-    w = AVI_video_width(a);
-    h = AVI_video_height(a);
-    fr = AVI_frame_rate(a);
-    compressor = AVI_video_compressor(a);
-    estimateBufferSize = w * h * 2 / 7;
-    Serial.printf("AVI frames: %d, %d x %d @ %.2f fps, format: %s, estimateBufferSize: %d\n", frames, w, h, fr, compressor, estimateBufferSize);
+    if (a)
+    {
+      frames = AVI_video_frames(a);
+      w = AVI_video_width(a);
+      h = AVI_video_height(a);
+      fr = AVI_frame_rate(a);
+      compressor = AVI_video_compressor(a);
+      estimateBufferSize = w * h * 2 / 7;
+      Serial.printf("AVI frames: %d, %d x %d @ %.2f fps, format: %s, estimateBufferSize: %d\n", frames, w, h, fr, compressor, estimateBufferSize);
 
-    aChans = AVI_audio_channels(a);
-    aBits = AVI_audio_bits(a);
-    aFormat = AVI_audio_format(a);
-    aRate = AVI_audio_rate(a);
-    aBytes = AVI_audio_bytes(a);
-    aChunks = AVI_audio_chunks(a);
-    Serial.printf("Audio channels: %d, bits: %d, format: %d, rate: %d, bytes: %d, chunks: %d\n", aChans, aBits, aFormat, aRate, aBytes, aChunks);
+      aChans = AVI_audio_channels(a);
+      aBits = AVI_audio_bits(a);
+      aFormat = AVI_audio_format(a);
+      aRate = AVI_audio_rate(a);
+      aBytes = AVI_audio_bytes(a);
+      aChunks = AVI_audio_chunks(a);
+      Serial.printf("Audio channels: %d, bits: %d, format: %d, rate: %d, bytes: %d, chunks: %d\n", aChans, aBits, aFormat, aRate, aBytes, aChunks);
 
-    vidbuf = (char *)malloc(estimateBufferSize);
-    audio_feed_per_frame = aRate / fr;
-    audbuf = (char *)malloc(audio_feed_per_frame * 4);
+      vidbuf = (char *)malloc(estimateBufferSize);
+      audio_feed_per_frame = aRate / fr;
+      audbuf = (char *)malloc(audio_feed_per_frame * 4);
 
-    i2s_init(I2S_NUM_0,
-             aRate /* sample_rate */,
-             -1 /* mck_io_num */,  /*!< MCK in out pin. Note that ESP32 supports setting MCK on GPIO0/GPIO1/GPIO3 only*/
-             I2S_BCLK,             /*!< BCK in out pin*/
-             I2S_LRCK,             /*!< WS in out pin*/
-             I2S_DOUT,             /*!< DATA out pin*/
-             -1 /* data_in_num */, /*!< DATA in pin*/
-             audio_feed_per_frame);
-    i2s_zero_dma_buffer(I2S_NUM_0);
+      i2s_init(I2S_NUM_0,
+               aRate /* sample_rate */,
+               -1 /* mck_io_num */,  /*!< MCK in out pin. Note that ESP32 supports setting MCK on GPIO0/GPIO1/GPIO3 only*/
+               I2S_BCLK,             /*!< BCK in out pin*/
+               I2S_LRCK,             /*!< WS in out pin*/
+               I2S_DOUT,             /*!< DATA out pin*/
+               -1 /* data_in_num */, /*!< DATA in pin*/
+               audio_feed_per_frame);
+      i2s_zero_dma_buffer(I2S_NUM_0);
 
-    isStopped = false;
-    start_ms = millis();
-    next_frame_ms = start_ms + ((curr_frame + 1) * 1000 / fr);
+      isStopped = false;
+      start_ms = millis();
+      next_frame_ms = start_ms + ((curr_frame + 1) * 1000 / fr);
+    }
   }
 }
 
@@ -156,6 +172,8 @@ void loop()
         else
         {
           actual_video_size = AVI_read_frame(a, vidbuf, &iskeyframe);
+          // Serial.printf("frame: %d, iskeyframe: %d, video_bytes: %d, actual_video_size: %d, audio_bytes: %d, ESP.getFreeHeap(): %d\n", curr_frame, iskeyframe, video_bytes, actual_video_size, audio_bytes, ESP.getFreeHeap());
+
           jpegdec.openRAM((uint8_t *)vidbuf, actual_video_size, drawMCU);
           jpegdec.setPixelType(RGB565_BIG_ENDIAN);
           jpegdec.decode(0, 0, 0);
@@ -171,8 +189,6 @@ void loop()
         ++skipped_frames;
         // Serial.printf("Skip frame %d > %d\n", millis(), next_frame_ms);
       }
-
-      // Serial.printf("frame: %d, iskeyframe: %d, video_bytes: %d, actual_video_size: %d, audio_bytes: %d\n", curr_frame, iskeyframe, video_bytes, actual_video_size, audio_bytes);
 
       ++curr_frame;
       next_frame_ms = start_ms + ((curr_frame + 1) * 1000 / fr);
