@@ -1,5 +1,5 @@
-/*
- * require libraries:
+/***
+ * Required libraries:
  * Arduino_GFX: https://github.com/moononournation/Arduino_GFX.git
  * avilib: https://github.com/lanyou1900/avilib.git
  */
@@ -8,9 +8,9 @@ const char *root = "/root";
 const char *avi_file = "/root/AviMp3Cinepak320p30fps.avi";
 
 #include <WiFi.h>
+
 #include <FFat.h>
 #include <LittleFS.h>
-#include <SD_MMC.h>
 
 extern "C"
 {
@@ -21,13 +21,6 @@ extern "C"
  * Start of Arduino_GFX setting
  ******************************************************************************/
 #include <Arduino_GFX_Library.h>
-
-// #define GFX_BL DF_GFX_BL // default backlight pin, you may replace DF_GFX_BL to actual backlight pin
-///* More data bus class: https://github.com/moononournation/Arduino_GFX/wiki/Data-Bus-Class */
-// Arduino_DataBus *bus = create_default_Arduino_DataBus();
-///* More display class: https://github.com/moononournation/Arduino_GFX/wiki/Display-Class */
-// Arduino_GFX *gfx = new Arduino_ILI9341(bus, DF_GFX_RST, 3/* rotation */, false /* IPS */);
-
 #define GFX_DEV_DEVICE ZX3D50CE02S
 #define GFX_BL 45
 Arduino_DataBus *bus = new Arduino_ESP32LCD8(
@@ -103,7 +96,7 @@ void setup()
   SD_MMC.setPins(SD_SCK /* CLK */, SD_MOSI /* CMD/MOSI */, SD_MISO /* D0/MISO */);
   if (!SD_MMC.begin(root, true /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_DEFAULT))
   {
-    Serial.println(F("ERROR: File system mount failed!"));
+    Serial.println("ERROR: File system mount failed!");
   }
   else
   {

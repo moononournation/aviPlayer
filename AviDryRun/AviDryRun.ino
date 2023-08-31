@@ -1,16 +1,23 @@
-/*
+/***
+ * Required libraries:
  * avilib: https://github.com/lanyou1900/avilib.git
  */
 
-#include <FFat.h>
 const char *root = "/root";
 // const char *avi_file = "/root/AviPcmu8Cinepak240p15fps.avi";
 const char *avi_file = "/root/AviPcmu8Mjpeg240p15fps.avi";
 // const char *avi_file = "/root/AviPcmu8Mjpeg320p10fps.avi";
+
+#include <WiFi.h>
+
+#include <FFat.h>
+
 extern "C"
 {
 #include <avilib.h>
 }
+
+/* variables */
 static avi_t *a;
 static long frames, estimateBufferSize, aRate, aBytes, aChunks, actual_video_size;
 static int w, h, aChans, aBits, aFormat;
@@ -19,10 +26,12 @@ static char *compressor;
 static char *vidbuf;
 static char *audbuf;
 static bool isStopped = true;
-static long curr_frame = 0;
+static int curr_frame = 0;
 static unsigned long start_ms;
 
 void setup() {
+  WiFi.mode(WIFI_OFF);
+
   Serial.begin(115200);
   // Serial.setDebugOutput(true);
   // while(!Serial);
@@ -30,7 +39,7 @@ void setup() {
 
   if (!FFat.begin(false, root))
   {
-    Serial.println(F("ERROR: File system mount failed!"));
+    Serial.println("ERROR: File system mount failed!");
   }
   else
   {

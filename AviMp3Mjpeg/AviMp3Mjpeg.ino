@@ -1,5 +1,5 @@
-/*
- * require libraries:
+/***
+ * Required libraries:
  * Arduino_GFX: https://github.com/moononournation/Arduino_GFX.git
  * avilib: https://github.com/lanyou1900/avilib.git
  * libhelix: https://github.com/pschatzmann/arduino-libhelix.git
@@ -100,7 +100,7 @@ void setup()
   SD_MMC.setPins(SD_SCK /* CLK */, SD_MOSI /* CMD/MOSI */, SD_MISO /* D0/MISO */);
   if (!SD_MMC.begin(root, true /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_DEFAULT))
   {
-    Serial.println(F("ERROR: File system mount failed!"));
+    Serial.println("ERROR: File system mount failed!");
   }
   else
   {

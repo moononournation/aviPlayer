@@ -83,7 +83,7 @@ void setup()
   if (!FFat.begin(false, root))
   // if (!LittleFS.begin(false, root))
   {
-    Serial.println(F("ERROR: File system mount failed!"));
+    Serial.println("ERROR: File system mount failed!");
   }
   else
   {

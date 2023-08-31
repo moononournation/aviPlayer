@@ -1,5 +1,5 @@
-/*
- * require libraries:
+/***
+ * Required libraries:
  * Arduino_GFX: https://github.com/moononournation/Arduino_GFX.git
  * avilib: https://github.com/lanyou1900/avilib.git
  * libhelix: https://github.com/pschatzmann/arduino-libhelix.git
@@ -9,6 +9,7 @@ const char *root = "/root";
 const char *avi_file = "/root/AviMp3Cinepak320p30fps.avi";
 
 #include <WiFi.h>
+
 #include <FFat.h>
 #include <LittleFS.h>
 #include <SD_MMC.h>
@@ -108,7 +109,7 @@ void setup()
   SD_MMC.setPins(SD_SCK /* CLK */, SD_MOSI /* CMD/MOSI */, SD_MISO /* D0/MISO */);
   if (!SD_MMC.begin(root, true /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_DEFAULT))
   {
-    Serial.println(F("ERROR: File system mount failed!"));
+    Serial.println("ERROR: File system mount failed!");
   }
   else
   {
