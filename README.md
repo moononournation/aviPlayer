@@ -11,6 +11,8 @@ ffmpeg -i input.mp4 -c:a mp3 -c:v cinepak -q:v 10 -vf "fps=15,scale=-1:240:flags
 
 ffmpeg -i input.mp4 -c:a mp3 -c:v cinepak -q:v 10 -vf "fps=30,scale=-1:240:flags=lanczos,crop=320:240:(in_w-320)/2:0" AviMp3Cinepak240p30fps.avi
 
+ffmpeg -i input.mkv -c:a mp3 -c:v cinepak -q:v 20 -vf "fps=15,scale=-1:480:flags=lanczos,crop=800:480:(in_w-800)/2:0" AviMp3Cinepak480p15fps.avi
+
 ffmpeg -i input.mp4 -c:a mp3 -c:v cinepak -q:v 20 -vf "fps=30,scale=-1:480:flags=lanczos,crop=800:480:(in_w-800)/2:0" AviMp3Cinepak480p30fps.avi
 ```
 
