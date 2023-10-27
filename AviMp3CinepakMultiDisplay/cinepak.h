@@ -21,7 +21,7 @@
  *
  */
 
-#define BIG_ENDIAN_PIXEL
+// #define BIG_ENDIAN_PIXEL
 #define USE_DRAW_CALLBACK
 
 #ifdef USE_DRAW_CALLBACK
@@ -107,7 +107,7 @@ public:
 
 		for (uint16_t i = 0; i < _stripCount; i++)
 		{
-			_data_pos += 2;						 // Ignore, substitute with our own.
+			_data_pos += 2;											 // Ignore, substitute with our own.
 			_strip_length = readUint16BE() - 12; // Subtract the 12 uint8_t header
 			_strip_top = _y;
 			_data_pos += 2; // Ignore, substitute with our own.

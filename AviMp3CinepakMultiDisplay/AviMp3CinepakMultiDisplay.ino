@@ -80,25 +80,25 @@ static void draw(uint16_t x, uint16_t y, uint16_t *p, uint16_t w, uint16_t h)
 {
   // Serial.printf("draw(%d, %d, *p, %d, %d)\n", x, y, w, h);
   unsigned long s = millis();
-  if ((x >= 0) && (x < 320) && (y >= 0) && (y < 172))
+  if ((y >= 0) && (y < 172) && ((x + w) >= 0) && (x < 320))
   {
-    gfx_tl->draw16bitBeRGBBitmap(x, y, p, w, h);
+    gfx_tl->draw16bitRGBBitmap(x, y, p, w, h);
   }
-  else if ((x >= 80) && (x < 320) && (y >= 264) && (y < 400))
+  if ((y >= 264) && (y < 400) && ((x + w) >= 80) && (x < 320))
   {
-    gfx_bl->draw16bitBeRGBBitmap(x - 80, y - 264, p, w, h);
+    gfx_bl->draw16bitRGBBitmap(x - 80, y - 264, p, w, h);
   }
-  else if ((x >= 332) && (x < 468) && (y >= 80) && (y < 320))
+  if ((y >= 80) && (y < 320) && ((x + w) >= 332) && (x < 468))
   {
-    gfx->draw16bitBeRGBBitmap(x - 332, y - 80, p, w, h);
+    gfx->draw16bitRGBBitmap(x - 332, y - 80, p, w, h);
   }
-  else if ((x >= 480) && (x < 800) && (y >= 0) && (y < 172))
+  if ((y >= 0) && (y < 172) && ((x + w) >= 480) && (x < 800))
   {
-    gfx_tr->draw16bitBeRGBBitmap(x - 480, y, p, w, h);
+    gfx_tr->draw16bitRGBBitmap(x - 480, y, p, w, h);
   }
-  else if ((x >= 480) && (x < 720) && (y >= 264) && (y < 400))
+  if ((y >= 264) && (y < 400) && ((x + w) >= 480) && (x < 720))
   {
-    gfx_br->draw16bitBeRGBBitmap(x - 480, y - 264, p, w, h);
+    gfx_br->draw16bitRGBBitmap(x - 480, y - 264, p, w, h);
   }
   total_show_video_ms += millis() - s;
 }
@@ -201,7 +201,7 @@ void setup()
       {
         Serial.println("audbuf malloc failed!");
       }
-      output_buf_size = 4 * 4 * 2;
+      output_buf_size = 80 * 4 * 2;
       output_buf = (uint16_t *)heap_caps_malloc(output_buf_size, MALLOC_CAP_DMA);
       if (!output_buf)
       {
@@ -275,7 +275,7 @@ void loop()
           // if ((!skipped_last_frame) || iskeyframe)
           {
             // skipped_last_frame = false;
-            decoder.decodeFrame((uint8_t *)vidbuf, actual_video_size, output_buf, output_buf_size, draw, false);
+            decoder.decodeFrame((uint8_t *)vidbuf, actual_video_size, output_buf, output_buf_size, draw, iskeyframe);
             total_decode_video_ms += millis() - curr_ms;
             curr_ms = millis();
           }
