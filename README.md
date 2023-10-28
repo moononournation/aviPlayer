@@ -15,7 +15,7 @@ ffmpeg -i input.mkv -c:a mp3 -c:v cinepak -q:v 20 -vf "fps=15,scale=-1:480:flags
 
 ffmpeg -i input.mp4 -c:a mp3 -c:v cinepak -q:v 20 -vf "fps=30,scale=-1:480:flags=lanczos,crop=800:480:(in_w-800)/2:0" AviMp3Cinepak480p30fps.avi
 
-ffmpeg -i input.mp4 -c:a mp3 -ac 1 -ab 16k -c:v cinepak -q:v 20 -vf "fps=7,scale=800:-1:flags=lanczos,crop=800:400:0:(in_h-400)/2" AviMp3Cinepak400p7fps.avi
+ffmpeg -i input.mp4 -c:a mp3 -c:v cinepak -q:v 20 -vf "fps=10,scale=800:-1:flags=lanczos,crop=800:400:0:(in_h-400)/2" AviMp3Cinepak400p10fps.avi
 ```
 
 ### Cinepak color screen for debug only

@@ -6,7 +6,7 @@
  */
 
 const char *root = "/root";
-const char *avi_file = "/root/AviMp3Cinepak400p7fps.avi";
+const char *avi_file = "/root/AviMp3Cinepak400p10fps.avi";
 
 #include <WiFi.h>
 
