@@ -39,18 +39,19 @@ JPEGDEC jpegdec;
 /* variables */
 static avi_t *a;
 static long frames, estimateBufferSize, aRate, aBytes, aChunks, actual_video_size;
-static int w, h, aChans, aBits, aFormat;
+static long w, h, aChans, aBits, aFormat;
 static double fr;
 static char *compressor;
 static char *vidbuf;
 static char *audbuf;
 static bool isStopped = true;
-static int curr_frame = 0;
-static int skipped_frames = 0;
+static long curr_frame = 0;
+static long skipped_frames = 0;
 static unsigned long start_ms, next_frame_ms;
 static int audio_feed_per_frame;
 
 #include "esp32_audio.h"
+
 // microSD card
 #define SD_SCK 39
 #define SD_MISO 38
@@ -115,7 +116,7 @@ void setup()
       fr = AVI_frame_rate(a);
       compressor = AVI_video_compressor(a);
       estimateBufferSize = w * h * 2 / 7;
-      Serial.printf("AVI frames: %d, %d x %d @ %.2f fps, format: %s, estimateBufferSize: %d\n", frames, w, h, fr, compressor, estimateBufferSize);
+      Serial.printf("AVI frames: %ld, %ld x %ld @ %.2f fps, format: %s, estimateBufferSize: %ld, ESP.getFreeHeap(): %ld\n", frames, w, h, fr, compressor, estimateBufferSize, (long)ESP.getFreeHeap());
 
       aChans = AVI_audio_channels(a);
       aBits = AVI_audio_bits(a);
@@ -123,9 +124,14 @@ void setup()
       aRate = AVI_audio_rate(a);
       aBytes = AVI_audio_bytes(a);
       aChunks = AVI_audio_chunks(a);
-      Serial.printf("Audio channels: %d, bits: %d, format: %d, rate: %d, bytes: %d, chunks: %d\n", aChans, aBits, aFormat, aRate, aBytes, aChunks);
+      Serial.printf("Audio channels: %ld, bits: %ld, format: %ld, rate: %ld, bytes: %ld, chunks: %ld\n", aChans, aBits, aFormat, aRate, aBytes, aChunks);
 
-      vidbuf = (char *)malloc(estimateBufferSize);
+      vidbuf = (char *)heap_caps_malloc(estimateBufferSize, MALLOC_CAP_8BIT);
+      if (!vidbuf)
+      {
+        Serial.println("vidbuf heap_caps_malloc failed!");
+      }
+
       audio_feed_per_frame = aRate / fr;
       audbuf = (char *)malloc(audio_feed_per_frame * 4);
 
@@ -168,12 +174,12 @@ void loop()
         long video_bytes = AVI_frame_size(a, curr_frame);
         if (video_bytes > estimateBufferSize)
         {
-          Serial.printf("video_bytes(%d) > estimateBufferSize(%d)\n", video_bytes, estimateBufferSize);
+          Serial.printf("video_bytes(%ld) > estimateBufferSize(%ld)\n", video_bytes, estimateBufferSize);
         }
         else
         {
           actual_video_size = AVI_read_frame(a, vidbuf, &iskeyframe);
-          // Serial.printf("frame: %d, iskeyframe: %d, video_bytes: %d, actual_video_size: %d, audio_bytes: %d, ESP.getFreeHeap(): %d\n", curr_frame, iskeyframe, video_bytes, actual_video_size, audio_bytes, ESP.getFreeHeap());
+          // Serial.printf("frame: %ld, iskeyframe: %ld, video_bytes: %ld, actual_video_size: %ld, audio_bytes: %ld, ESP.getFreeHeap(): %ld\n", curr_frame, iskeyframe, video_bytes, actual_video_size, audio_bytes, (long)ESP.getFreeHeap());
 
           jpegdec.openRAM((uint8_t *)vidbuf, actual_video_size, drawMCU);
           jpegdec.setPixelType(RGB565_BIG_ENDIAN);
@@ -188,7 +194,7 @@ void loop()
       else
       {
         ++skipped_frames;
-        // Serial.printf("Skip frame %d > %d\n", millis(), next_frame_ms);
+        // Serial.printf("Skip frame %ld > %ld\n", millis(), next_frame_ms);
       }
 
       ++curr_frame;
@@ -199,7 +205,7 @@ void loop()
       i2s_zero_dma_buffer(I2S_NUM_0);
       AVI_close(a);
       isStopped = true;
-      Serial.printf("Duration: %d, skipped frames: %d\n", millis() - start_ms, skipped_frames);
+      Serial.printf("Duration: %lu, skipped frames: %ld\n", millis() - start_ms, skipped_frames);
     }
   }
   else

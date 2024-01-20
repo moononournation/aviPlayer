@@ -11,6 +11,8 @@ const char *avi_file = "/root/AviPcmu8Mjpeg240p15fps.avi";
 #include <WiFi.h>
 
 #include <FFat.h>
+#include <LittleFS.h>
+#include <SD_MMC.h>
 
 extern "C"
 {
@@ -20,24 +22,36 @@ extern "C"
 /* variables */
 static avi_t *a;
 static long frames, estimateBufferSize, aRate, aBytes, aChunks, actual_video_size;
-static int w, h, aChans, aBits, aFormat;
+static long w, h, aChans, aBits, aFormat;
 static double fr;
 static char *compressor;
 static char *vidbuf;
 static char *audbuf;
 static bool isStopped = true;
-static int curr_frame = 0;
+static long curr_frame = 0;
 static unsigned long start_ms;
 
-void setup() {
+// microSD card
+#define SD_SCK 39
+#define SD_MISO 38
+#define SD_MOSI 40
+#define SD_CS 41
+
+void setup()
+{
   WiFi.mode(WIFI_OFF);
 
   Serial.begin(115200);
   // Serial.setDebugOutput(true);
   // while(!Serial);
-  Serial.println("avilib");
+  Serial.println("AviDryRun");
 
   if (!FFat.begin(false, root))
+  // if (!LittleFS.begin(false, root))
+  // pinMode(SD_CS /* CS */, OUTPUT);
+  // digitalWrite(SD_CS /* CS */, HIGH);
+  // SD_MMC.setPins(SD_SCK /* CLK */, SD_MOSI /* CMD/MOSI */, SD_MISO /* D0/MISO */);
+  // if (!SD_MMC.begin(root, true /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_DEFAULT))
   {
     Serial.println("ERROR: File system mount failed!");
   }
@@ -45,39 +59,52 @@ void setup() {
   {
     a = AVI_open_input_file(avi_file, 1);
 
-    frames = AVI_video_frames(a);
-    w = AVI_video_width(a);
-    h = AVI_video_height(a);
-    fr = AVI_frame_rate(a);
-    compressor = AVI_video_compressor(a);
-    estimateBufferSize = w * h * 2 / 7;
-    Serial.printf("AVI frames: %d, %d x %d @ %.2f fps, format: %s, estimateBufferSize: %d\n", frames, w, h, fr, compressor, estimateBufferSize);
+    if (a)
+    {
+      frames = AVI_video_frames(a);
+      w = AVI_video_width(a);
+      h = AVI_video_height(a);
+      fr = AVI_frame_rate(a);
+      compressor = AVI_video_compressor(a);
+      estimateBufferSize = w * h * 2 / 5;
+      Serial.printf("AVI frames: %ld, %ld x %ld @ %.2f fps, format: %s, estimateBufferSize: %ld, ESP.getFreeHeap(): %ld\n", frames, w, h, fr, compressor, estimateBufferSize, (long)ESP.getFreeHeap());
 
-    aChans = AVI_audio_channels(a);
-    aBits = AVI_audio_bits(a);
-    aFormat = AVI_audio_format(a);
-    aRate = AVI_audio_rate(a);
-    aBytes = AVI_audio_bytes(a);
-    aChunks = AVI_audio_chunks(a);
-    Serial.printf("Audio channels: %d, bits: %d, format: %d, rate: %d, bytes: %d, chunks: %d\n", aChans, aBits, aFormat, aRate, aBytes, aChunks);
+      aChans = AVI_audio_channels(a);
+      aBits = AVI_audio_bits(a);
+      aFormat = AVI_audio_format(a);
+      aRate = AVI_audio_rate(a);
+      aBytes = AVI_audio_bytes(a);
+      aChunks = AVI_audio_chunks(a);
+      Serial.printf("Audio channels: %ld, bits: %ld, format: %ld, rate: %ld, bytes: %ld, chunks: %ld\n", aChans, aBits, aFormat, aRate, aBytes, aChunks);
 
-    vidbuf = (char *)malloc(estimateBufferSize);
-    audbuf = (char *)malloc(1024);
+      vidbuf = (char *)heap_caps_malloc(estimateBufferSize, MALLOC_CAP_8BIT);
+      if (!vidbuf)
+      {
+        Serial.println("vidbuf heap_caps_malloc failed!");
+      }
 
-    isStopped = false;
-    start_ms = millis();
+      audbuf = (char *)heap_caps_malloc(1024, MALLOC_CAP_8BIT);
+      if (!audbuf)
+      {
+        Serial.println("audbuf heap_caps_malloc failed!");
+      }
+
+      isStopped = false;
+      start_ms = millis();
+    }
   }
 }
 
-void loop() {
+void loop()
+{
   if (!isStopped)
   {
     if (curr_frame < frames)
     {
-      AVI_set_video_position(a, curr_frame);
-
       long audio_bytes = AVI_audio_size(a, curr_frame);
       AVI_read_audio(a, audbuf, audio_bytes);
+
+      AVI_set_video_position(a, curr_frame);
 
       int iskeyframe;
       long video_bytes = AVI_frame_size(a, curr_frame);
@@ -98,9 +125,11 @@ void loop() {
     {
       AVI_close(a);
       isStopped = true;
-      Serial.printf("Duration: %d\n", millis() - start_ms);
+      Serial.printf("Duration: %lu\n", millis() - start_ms);
     }
-  } else {
+  }
+  else
+  {
     delay(100);
   }
 }

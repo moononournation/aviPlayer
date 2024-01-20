@@ -37,7 +37,7 @@ CinepakDecoder decoder;
 /* variables */
 static avi_t *a;
 static long frames, estimateBufferSize, aRate, aBytes, aChunks, actual_video_size;
-static int w, h, aChans, aBits, aFormat;
+static long w, h, aChans, aBits, aFormat;
 static double fr;
 static char *compressor;
 static char *vidbuf;
@@ -45,9 +45,9 @@ static char *audbuf;
 static uint16_t *output_buf;
 static size_t output_buf_size;
 static bool isStopped = true;
-static int curr_frame = 0;
+static long curr_frame = 0;
 static long curr_chunk = 0;
-static int skipped_frames = 0;
+static long skipped_frames = 0;
 static bool skipped_last_frame = false;
 static unsigned long start_ms, next_frame_ms;
 
@@ -110,7 +110,7 @@ void setup()
       fr = AVI_frame_rate(a);
       compressor = AVI_video_compressor(a);
       estimateBufferSize = w * h * 2 / 5;
-      Serial.printf("AVI frames: %d, %d x %d @ %.2f fps, format: %s, estimateBufferSize: %d, ESP.getFreeHeap(): %d\n", frames, w, h, fr, compressor, estimateBufferSize, ESP.getFreeHeap());
+      Serial.printf("AVI frames: %ld, %ld x %ld @ %.2f fps, format: %s, estimateBufferSize: %ld, ESP.getFreeHeap(): %ld\n", frames, w, h, fr, compressor, estimateBufferSize, (long)ESP.getFreeHeap());
 
       aChans = AVI_audio_channels(a);
       aBits = AVI_audio_bits(a);
@@ -118,12 +118,26 @@ void setup()
       aRate = AVI_audio_rate(a);
       aBytes = AVI_audio_bytes(a);
       aChunks = AVI_audio_chunks(a);
-      Serial.printf("Audio channels: %d, bits: %d, format: %d, rate: %d, bytes: %d, chunks: %d\n", aChans, aBits, aFormat, aRate, aBytes, aChunks);
+      Serial.printf("Audio channels: %ld, bits: %ld, format: %ld, rate: %ld, bytes: %ld, chunks: %ld\n", aChans, aBits, aFormat, aRate, aBytes, aChunks);
 
-      vidbuf = (char *)heap_caps_malloc(estimateBufferSize, MALLOC_CAP_8BIT);
-      audbuf = (char *)heap_caps_malloc(1024, MALLOC_CAP_8BIT);
       output_buf_size = w * 4;
       output_buf = (uint16_t *)heap_caps_malloc(output_buf_size * sizeof(uint16_t), MALLOC_CAP_DMA);
+      if (!output_buf)
+      {
+        Serial.println("output_buf heap_caps_malloc failed!");
+      }
+
+      vidbuf = (char *)heap_caps_malloc(estimateBufferSize, MALLOC_CAP_8BIT);
+      if (!vidbuf)
+      {
+        Serial.println("vidbuf heap_caps_malloc failed!");
+      }
+
+      audbuf = (char *)heap_caps_malloc(1024, MALLOC_CAP_8BIT);
+      if (!audbuf)
+      {
+        Serial.println("audbuf heap_caps_malloc failed!");
+      }
 
       isStopped = false;
       start_ms = millis();
@@ -149,12 +163,12 @@ void loop()
         long video_bytes = AVI_frame_size(a, curr_frame);
         if (video_bytes > estimateBufferSize)
         {
-          Serial.printf("video_bytes(%d) > estimateBufferSize(%d)\n", video_bytes, estimateBufferSize);
+          Serial.printf("video_bytes(%ld) > estimateBufferSize(%ld)\n", video_bytes, estimateBufferSize);
         }
         else
         {
           actual_video_size = AVI_read_frame(a, vidbuf, &iskeyframe);
-          // Serial.printf("frame: %d, iskeyframe: %d, video_bytes: %d, actual_video_size: %d, audio_bytes: %d, ESP.getFreeHeap(): %d\n", curr_frame, iskeyframe, video_bytes, actual_video_size, audio_bytes, ESP.getFreeHeap());
+          // Serial.printf("frame: %ld, iskeyframe: %ld, video_bytes: %ld, actual_video_size: %ld, audio_bytes: %ld, ESP.getFreeHeap(): %ld\n", curr_frame, iskeyframe, video_bytes, actual_video_size, audio_bytes, (long)ESP.getFreeHeap());
 
           // if ((!skipped_last_frame) || iskeyframe)
           {
@@ -185,7 +199,7 @@ void loop()
     {
       AVI_close(a);
       isStopped = true;
-      Serial.printf("Duration: %d, skipped frames: %d\n", millis() - start_ms, skipped_frames);
+      Serial.printf("Duration: %lu, skipped frames: %ld\n", millis() - start_ms, skipped_frames);
     }
   }
   else

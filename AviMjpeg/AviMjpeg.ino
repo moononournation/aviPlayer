@@ -1,5 +1,5 @@
-/*
- * require libraries:
+/***
+ * Required libraries:
  * Arduino_GFX: https://github.com/moononournation/Arduino_GFX.git
  * avilib: https://github.com/lanyou1900/avilib.git
  * JPEGDEC: https://github.com/bitbank2/JPEGDEC.git
@@ -9,8 +9,10 @@ const char *root = "/root";
 const char *avi_file = "/root/AviPcmu8Mjpeg240p15fps.avi";
 
 #include <WiFi.h>
+
 #include <FFat.h>
 #include <LittleFS.h>
+#include <SD_MMC.h>
 
 extern "C"
 {
@@ -30,22 +32,28 @@ Arduino_GFX *gfx = new Arduino_ILI9341(bus, DF_GFX_RST, 3 /* rotation */, false 
  * End of Arduino_GFX setting
  ******************************************************************************/
 
+#include <JPEGDEC.h>
+JPEGDEC jpegdec;
+
 /* variables */
 static avi_t *a;
 static long frames, estimateBufferSize, aRate, aBytes, aChunks, actual_video_size;
-static int w, h, aChans, aBits, aFormat;
+static long w, h, aChans, aBits, aFormat;
 static double fr;
 static char *compressor;
 static char *vidbuf;
 static char *audbuf;
 static bool isStopped = true;
-static int curr_frame = 0;
+static long curr_frame = 0;
 static long curr_chunk = 0;
-static int skipped_frames = 0;
+static long skipped_frames = 0;
 static unsigned long start_ms;
 
-#include <JPEGDEC.h>
-JPEGDEC jpegdec;
+// microSD card
+#define SD_SCK 39
+#define SD_MISO 38
+#define SD_MOSI 40
+#define SD_CS 41
 
 // pixel drawing callback
 static int drawMCU(JPEGDRAW *pDraw)
@@ -82,6 +90,10 @@ void setup()
 
   if (!FFat.begin(false, root))
   // if (!LittleFS.begin(false, root))
+  // pinMode(SD_CS /* CS */, OUTPUT);
+  // digitalWrite(SD_CS /* CS */, HIGH);
+  // SD_MMC.setPins(SD_SCK /* CLK */, SD_MOSI /* CMD/MOSI */, SD_MISO /* D0/MISO */);
+  // if (!SD_MMC.begin(root, true /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_DEFAULT))
   {
     Serial.println("ERROR: File system mount failed!");
   }
@@ -97,7 +109,7 @@ void setup()
       fr = AVI_frame_rate(a);
       compressor = AVI_video_compressor(a);
       estimateBufferSize = w * h * 2 / 7;
-      Serial.printf("AVI frames: %d, %d x %d @ %.2f fps, format: %s, estimateBufferSize: %d\n", frames, w, h, fr, compressor, estimateBufferSize);
+      Serial.printf("AVI frames: %ld, %ld x %ld @ %.2f fps, format: %s, estimateBufferSize: %ld, ESP.getFreeHeap(): %ld\n", frames, w, h, fr, compressor, estimateBufferSize, (long)ESP.getFreeHeap());
 
       aChans = AVI_audio_channels(a);
       aBits = AVI_audio_bits(a);
@@ -105,10 +117,19 @@ void setup()
       aRate = AVI_audio_rate(a);
       aBytes = AVI_audio_bytes(a);
       aChunks = AVI_audio_chunks(a);
-      Serial.printf("Audio channels: %d, bits: %d, format: %d, rate: %d, bytes: %d, chunks: %d\n", aChans, aBits, aFormat, aRate, aBytes, aChunks);
+      Serial.printf("Audio channels: %ld, bits: %ld, format: %ld, rate: %ld, bytes: %ld, chunks: %ld\n", aChans, aBits, aFormat, aRate, aBytes, aChunks);
 
-      vidbuf = (char *)malloc(estimateBufferSize);
-      audbuf = (char *)malloc(1024);
+      vidbuf = (char *)heap_caps_malloc(estimateBufferSize, MALLOC_CAP_8BIT);
+      if (!vidbuf)
+      {
+        Serial.println("vidbuf heap_caps_malloc failed!");
+      }
+
+      audbuf = (char *)heap_caps_malloc(1024, MALLOC_CAP_8BIT);
+      if (!audbuf)
+      {
+        Serial.println("audbuf heap_caps_malloc failed!");
+      }
 
       isStopped = false;
       start_ms = millis();
@@ -164,7 +185,7 @@ void loop()
     {
       AVI_close(a);
       isStopped = true;
-      Serial.printf("Duration: %d, skipped frames: %d\n", millis() - start_ms, skipped_frames);
+      Serial.printf("Duration: %lu, skipped frames: %ld\n", millis() - start_ms, skipped_frames);
     }
   }
   else
