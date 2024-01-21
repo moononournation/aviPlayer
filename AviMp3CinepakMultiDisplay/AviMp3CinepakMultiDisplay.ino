@@ -65,6 +65,7 @@ static unsigned long total_decode_video_ms = 0;
 static unsigned long total_show_video_ms = 0;
 
 #include "esp32_audio.h"
+
 // microSD card
 // #define SD_SCK 12
 // #define SD_MISO 13
