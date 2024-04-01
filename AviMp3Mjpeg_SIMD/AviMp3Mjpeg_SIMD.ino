@@ -3,7 +3,7 @@
  * Arduino_GFX: https://github.com/moononournation/Arduino_GFX.git
  * avilib: https://github.com/lanyou1900/avilib.git
  * libhelix: https://github.com/pschatzmann/arduino-libhelix.git
- * JPEGDEC: https://github.com/bitbank2/JPEGDEC.git
+ * ESP32_JPEG: https://github.com/esp-arduino-libs/ESP32_JPEG.git
  */
 
 const char *root = "/root";
@@ -33,8 +33,10 @@ Arduino_GFX *gfx = new Arduino_NV3041A(bus, GFX_NOT_DEFINED /* RST */, 0 /* rota
  * End of Arduino_GFX setting
  ******************************************************************************/
 
-#include <JPEGDEC.h>
-JPEGDEC jpegdec;
+#include <ESP32_JPEG_Library.h>
+jpeg_dec_handle_t *jpeg_dec;
+jpeg_dec_io_t *jpeg_io;
+jpeg_dec_header_info_t *out_info;
 
 /* variables */
 static avi_t *a;
@@ -46,6 +48,7 @@ static char *vidbuf;
 static char *audbuf;
 static size_t audbuf_read;
 static size_t audbuf_remain = 0;
+static uint16_t *output_buf;
 static size_t output_buf_size;
 static bool isStopped = true;
 static long curr_frame = 0;
@@ -67,16 +70,6 @@ static unsigned long total_show_video_ms = 0;
 #define I2S_BCLK 42
 #define I2S_LRCK 2
 
-// pixel drawing callback
-static int drawMCU(JPEGDRAW *pDraw)
-{
-  // Serial.printf("Draw pos = (%d, %d), size = %d x %d\n", pDraw->x, pDraw->y, pDraw->iWidth, pDraw->iHeight);
-  unsigned long s = millis();
-  gfx->draw16bitBeRGBBitmap(pDraw->x, pDraw->y, pDraw->pPixels, pDraw->iWidth, pDraw->iHeight);
-  total_show_video_ms += millis() - s;
-  return 1;
-} /* drawMCU() */
-
 void setup()
 {
   WiFi.mode(WIFI_OFF);
@@ -84,7 +77,7 @@ void setup()
   Serial.begin(115200);
   // Serial.setDebugOutput(true);
   // while(!Serial);
-  Serial.println("AviMp3Mjpeg_JPEGDEC");
+  Serial.println("AviMp3Mjpeg_SIMD");
 
 #ifdef GFX_EXTRA_PRE_INIT
   GFX_EXTRA_PRE_INIT();
@@ -133,6 +126,13 @@ void setup()
       aChunks = AVI_audio_chunks(a);
       Serial.printf("Audio channels: %ld, bits: %ld, format: %ld, rate: %ld, bytes: %ld, chunks: %ld\n", aChans, aBits, aFormat, aRate, aBytes, aChunks);
 
+      output_buf_size = w * h * 2;
+      output_buf = (uint16_t *)heap_caps_malloc(output_buf_size, MALLOC_CAP_DMA);
+      if (!output_buf)
+      {
+        Serial.println("output_buf heap_caps_malloc failed!");
+      }
+
       vidbuf = (char *)heap_caps_malloc(estimateBufferSize, MALLOC_CAP_8BIT);
       if (!vidbuf)
       {
@@ -174,6 +174,20 @@ void setup()
       {
         Serial.printf("mp3_player_task_start failed: %d\n", ret_val);
       }
+
+      // Generate default configuration
+      jpeg_dec_config_t config = {
+          .output_type = JPEG_RAW_TYPE_RGB565_BE,
+          .rotate = JPEG_ROTATE_0D,
+      };
+      // Create jpeg_dec
+      jpeg_dec = jpeg_dec_open(&config);
+
+      // Create io_callback handle
+      jpeg_io = (jpeg_dec_io_t *)calloc(1, sizeof(jpeg_dec_io_t));
+
+      // Create out_info handle
+      out_info = (jpeg_dec_header_info_t *)calloc(1, sizeof(jpeg_dec_header_info_t));
     }
   }
 }
@@ -209,11 +223,20 @@ void loop()
           curr_ms = millis();
           // Serial.printf("frame: %ld, iskeyframe: %ld, video_bytes: %ld, actual_video_size: %ld, audio_bytes: %ld, ESP.getFreeHeap(): %ld\n", curr_frame, iskeyframe, video_bytes, actual_video_size, audio_bytes, (long)ESP.getFreeHeap());
 
-          jpegdec.openRAM((uint8_t *)vidbuf, actual_video_size, drawMCU);
-          jpegdec.setPixelType(RGB565_BIG_ENDIAN);
-          jpegdec.decode(0, 0, 0);
-          jpegdec.close();
+          // Set input buffer and buffer len to io_callback
+          jpeg_io->inbuf = (uint8_t *)vidbuf;
+          jpeg_io->inbuf_len = actual_video_size;
+
+          jpeg_dec_parse_header(jpeg_dec, jpeg_io, out_info);
+
+          jpeg_io->outbuf = (uint8_t *)output_buf;
+
+          jpeg_dec_process(jpeg_dec, jpeg_io);
+
           total_decode_video_ms += millis() - curr_ms;
+          curr_ms = millis();
+          gfx->draw16bitBeRGBBitmap(0, 0, output_buf, w, h);
+          total_show_video_ms += millis() - curr_ms;
           curr_ms = millis();
         }
         while (millis() < next_frame_ms)
@@ -236,6 +259,7 @@ void loop()
       int time_used = millis() - start_ms;
       int total_frames = curr_frame;
       audbuf_read = 0;
+      jpeg_dec_close(jpeg_dec);
       AVI_close(a);
       isStopped = true;
       Serial.println("Play AVI end");
@@ -243,7 +267,7 @@ void loop()
       long played_frames = total_frames - skipped_frames;
       float fps = 1000.0 * played_frames / time_used;
       total_decode_audio_ms -= total_play_audio_ms;
-      total_decode_video_ms -= total_show_video_ms;
+      // total_decode_video_ms -= total_show_video_ms;
       Serial.printf("Played frames: %ld\n", played_frames);
       Serial.printf("Skipped frames: %ld (%0.1f %%)\n", skipped_frames, 100.0 * skipped_frames / total_frames);
       Serial.printf("Time used: %lu ms\n", time_used);

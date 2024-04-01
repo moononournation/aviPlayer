@@ -28,8 +28,8 @@ static esp_err_t i2s_init(i2s_port_t i2s_num, uint32_t sample_rate,
     i2s_config.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
     i2s_config.communication_format = I2S_COMM_FORMAT_STAND_I2S;
     i2s_config.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1;
-    i2s_config.dma_buf_count = 6;
-    i2s_config.dma_buf_len = 160;
+    i2s_config.dma_buf_count = 12;
+    i2s_config.dma_buf_len = 320;
     i2s_config.use_apll = false;
     i2s_config.tx_desc_auto_clear = true;
     i2s_config.fixed_mclk = 0;
@@ -50,7 +50,7 @@ static esp_err_t i2s_init(i2s_port_t i2s_num, uint32_t sample_rate,
 }
 
 static int _samprate = 0;
-static void audioDataCallback(MP3FrameInfo &info, int16_t *pwm_buffer, size_t len, void* ref)
+static void audioDataCallback(MP3FrameInfo &info, int16_t *pwm_buffer, size_t len, void *ref)
 {
     unsigned long s = millis();
     if (_samprate != info.samprate)
@@ -73,34 +73,29 @@ static void audioDataCallback(MP3FrameInfo &info, int16_t *pwm_buffer, size_t le
 static libhelix::MP3DecoderHelix _mp3(audioDataCallback);
 static void mp3_player_task(void *pvParam)
 {
-    avi_t *a = (avi_t *)pvParam;
-    audbuf = (char *)malloc(MP3_MAX_FRAME_SIZE);
-
-    long audio_bytes;
     unsigned long ms = millis();
     char *p;
-    long byte_remain, w;
+    long w;
     do
     {
-        audio_bytes = AVI_read_audio(a, audbuf, MP3_MAX_FRAME_SIZE);
-        total_read_audio_ms += millis() - ms;
         ms = millis();
 
         p = audbuf;
-        byte_remain = audio_bytes;
-        while (byte_remain > 0)
+        while (audbuf_remain > 0)
         {
-            w = _mp3.write(p, byte_remain);
+            w = _mp3.write(p, audbuf_remain);
             // log_i("r: %d, w: %d\n", r, w);
-            byte_remain -= w;
+            audbuf_remain -= w;
             p += w;
         }
         total_decode_audio_ms += millis() - ms;
         ms = millis();
-    } while(audio_bytes > 0);
-    
+        vTaskDelay(pdMS_TO_TICKS(1));
+    } while (audbuf_read > 0);
+
     log_i("MP3 stop.");
 
+    i2s_zero_dma_buffer(I2S_NUM_0);
     vTaskDelete(NULL);
 }
 
