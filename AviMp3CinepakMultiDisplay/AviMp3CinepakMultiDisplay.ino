@@ -199,7 +199,7 @@ void setup()
         output_buf = (uint16_t *)malloc(output_buf_size);
         if (!output_buf)
         {
-          Serial.println("output_buf heap_caps_malloc failed!");
+          Serial.println("output_buf malloc failed!");
         }
       }
 
@@ -209,7 +209,7 @@ void setup()
         vidbuf = (char *)malloc(estimateBufferSize);
         if (!vidbuf)
         {
-          Serial.println("vidbuf heap_caps_malloc failed!");
+          Serial.println("vidbuf malloc failed!");
         }
       }
 
@@ -219,7 +219,7 @@ void setup()
         audbuf = (char *)malloc(MP3_MAX_FRAME_SIZE);
         if (!audbuf)
         {
-          Serial.println("audbuf heap_caps_malloc failed!");
+          Serial.println("audbuf malloc failed!");
         }
       }
 
