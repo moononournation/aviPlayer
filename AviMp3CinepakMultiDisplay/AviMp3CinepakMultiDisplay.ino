@@ -196,19 +196,31 @@ void setup()
       output_buf = (uint16_t *)heap_caps_malloc(output_buf_size, MALLOC_CAP_DMA);
       if (!output_buf)
       {
-        Serial.println("output_buf heap_caps_malloc failed!");
+        output_buf = (uint16_t *)malloc(output_buf_size);
+        if (!output_buf)
+        {
+          Serial.println("output_buf heap_caps_malloc failed!");
+        }
       }
 
       vidbuf = (char *)heap_caps_malloc(estimateBufferSize, MALLOC_CAP_8BIT);
       if (!vidbuf)
       {
-        Serial.println("vidbuf heap_caps_malloc failed!");
+        vidbuf = (char *)malloc(estimateBufferSize);
+        if (!vidbuf)
+        {
+          Serial.println("vidbuf heap_caps_malloc failed!");
+        }
       }
 
       audbuf = (char *)heap_caps_malloc(MP3_MAX_FRAME_SIZE, MALLOC_CAP_8BIT);
       if (!audbuf)
       {
-        Serial.println("audbuf heap_caps_malloc failed!");
+        audbuf = (char *)malloc(MP3_MAX_FRAME_SIZE);
+        if (!audbuf)
+        {
+          Serial.println("audbuf heap_caps_malloc failed!");
+        }
       }
 
       // i2s_init(I2S_NUM_0,

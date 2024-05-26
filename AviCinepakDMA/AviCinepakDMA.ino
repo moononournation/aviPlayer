@@ -124,19 +124,31 @@ void setup()
       output_buf = (uint16_t *)heap_caps_malloc(output_buf_size * sizeof(uint16_t), MALLOC_CAP_DMA);
       if (!output_buf)
       {
-        Serial.println("output_buf heap_caps_malloc failed!");
+        output_buf = (uint16_t *)malloc(output_buf_size * sizeof(uint16_t));
+        if (!output_buf)
+        {
+          Serial.println("output_buf heap_caps_malloc failed!");
+        }
       }
 
       vidbuf = (char *)heap_caps_malloc(estimateBufferSize, MALLOC_CAP_8BIT);
       if (!vidbuf)
       {
-        Serial.println("vidbuf heap_caps_malloc failed!");
+        vidbuf = (char *)malloc(estimateBufferSize);
+        if (!vidbuf)
+        {
+          Serial.println("vidbuf heap_caps_malloc failed!");
+        }
       }
 
       audbuf = (char *)heap_caps_malloc(1024, MALLOC_CAP_8BIT);
       if (!audbuf)
       {
-        Serial.println("audbuf heap_caps_malloc failed!");
+        audbuf = (char *)malloc(1024);
+        if (!audbuf)
+        {
+          Serial.println("audbuf heap_caps_malloc failed!");
+        }
       }
 
       isStopped = false;
