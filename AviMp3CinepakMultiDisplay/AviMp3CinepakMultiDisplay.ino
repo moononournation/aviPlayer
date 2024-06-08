@@ -193,7 +193,7 @@ void setup()
       Serial.printf("Audio channels: %ld, bits: %ld, format: %ld, rate: %ld, bytes: %ld, chunks: %ld\n", aChans, aBits, aFormat, aRate, aBytes, aChunks);
 
       output_buf_size = 80 * 4 * 2;
-      output_buf = (uint16_t *)heap_caps_malloc(output_buf_size, MALLOC_CAP_DMA);
+      output_buf = (uint16_t *)heap_caps_aligned_alloc(16, output_buf_size, MALLOC_CAP_DMA);
       if (!output_buf)
       {
         output_buf = (uint16_t *)malloc(output_buf_size);

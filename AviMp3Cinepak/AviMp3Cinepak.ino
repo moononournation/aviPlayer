@@ -87,10 +87,10 @@ void setup()
   GFX_EXTRA_PRE_INIT();
 #endif
 
-  Serial.println("Init display");
+  // Init Display
   if (!gfx->begin(80000000))
   {
-    Serial.println("Init display failed!");
+    Serial.println("gfx->begin() failed!");
   }
   gfx->fillScreen(BLACK);
 
@@ -257,13 +257,13 @@ void loop()
       isStopped = true;
       Serial.println("Play AVI end");
 
-      int played_frames = total_frames - skipped_frames;
+      long played_frames = total_frames - skipped_frames;
       float fps = 1000.0 * played_frames / time_used;
       total_decode_audio_ms -= total_play_audio_ms;
       // total_decode_video_ms -= total_show_video_ms;
-      Serial.printf("Played frames: %d\n", played_frames);
-      Serial.printf("Skipped frames: %d (%0.1f %%)\n", skipped_frames, 100.0 * skipped_frames / total_frames);
-      Serial.printf("Time used: %d ms\n", time_used);
+      Serial.printf("Played frames: %ld\n", played_frames);
+      Serial.printf("Skipped frames: %ld (%0.1f %%)\n", skipped_frames, 100.0 * skipped_frames / total_frames);
+      Serial.printf("Time used: %ld ms\n", time_used);
       Serial.printf("Expected FPS: %0.1f\n", fr);
       Serial.printf("Actual FPS: %0.1f\n", fps);
       Serial.printf("Read audio: %lu ms (%0.1f %%)\n", total_read_audio_ms, 100.0 * total_read_audio_ms / time_used);
@@ -287,7 +287,7 @@ void loop()
       // gfx->setCursor(0, 0);
       gfx->setTextColor(WHITE);
       gfx->printf("Played frames: %d\n", played_frames);
-      gfx->printf("Skipped frames: %d (%0.1f %%)\n", skipped_frames, 100.0 * skipped_frames / total_frames);
+      gfx->printf("Skipped frames: %ld (%0.1f %%)\n", skipped_frames, 100.0 * skipped_frames / total_frames);
       gfx->printf("Time used: %d ms\n", time_used);
       gfx->printf("Expected FPS: %0.1f\n", fr);
       gfx->printf("Actual FPS: %0.1f\n\n", fps);
