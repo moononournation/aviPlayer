@@ -17,8 +17,7 @@
  *     Copy files to SD card
  ******************************************************************************/
 const char *root = "/root";
-// char *avi_filename = (char *)"/root/AviMp3Mjpeg240p15fps.avi";
-char *avi_filename = (char *)"/root/AviMp3Mjpeg176p.avi";
+char *avi_filename = (char *)"/root/AviMp3Mjpeg240p15fps.avi";
 
 #include "T_DECK.h"
 
@@ -28,6 +27,7 @@ char *avi_filename = (char *)"/root/AviMp3Mjpeg176p.avi";
 #include <SD.h>
 #include <SD_MMC.h>
 
+size_t output_buf_size;
 uint16_t *output_buf;
 
 #include "AviFunc.h"
@@ -57,9 +57,15 @@ void setup()
   gfx->fillScreen(BLACK);
 
 #ifdef GFX_BL
-  pinMode(GFX_BL, OUTPUT);
-  digitalWrite(GFX_BL, HIGH);
-#endif
+#if defined(ESP_ARDUINO_VERSION_MAJOR) && (ESP_ARDUINO_VERSION_MAJOR < 3)
+  ledcSetup(0, 1000, 8);
+  ledcAttachPin(GFX_BL, 0);
+  ledcWrite(0, 191);
+#else // ESP_ARDUINO_VERSION_MAJOR >= 3
+  ledcAttachChannel(GFX_BL, 1000, 8, 1);
+  ledcWrite(GFX_BL, 191);
+#endif // ESP_ARDUINO_VERSION_MAJOR >= 3
+#endif // GFX_BL
 
   // gfx->setTextColor(WHITE, BLACK);
   // gfx->setTextBound(60, 60, 240, 240);
@@ -91,7 +97,12 @@ void setup()
   }
   else
   {
-    output_buf = (uint16_t *)aligned_alloc(16, gfx->width() * gfx->height() * 2);
+    output_buf_size = gfx->width() * gfx->height() * 2;
+#ifdef RGB_PANEL
+    output_buf = gfx->getFramebuffer();
+#else
+    output_buf = (uint16_t *)aligned_alloc(16, output_buf_size);
+#endif
     if (!output_buf)
     {
       Serial.println("output_buf aligned_alloc failed!");
@@ -108,9 +119,6 @@ void loop()
     Serial.println("AVI start");
     gfx->fillScreen(BLACK);
 
-    avi_start_ms = millis();
-    avi_next_frame_ms = avi_start_ms + ((avi_curr_frame + 1) * 1000 / avi_fr);
-
     avi_feed_audio();
 
     Serial.println("Start play audio task");
@@ -120,12 +128,13 @@ void loop()
       Serial.printf("mp3_player_task_start failed: %d\n", ret_val);
     }
 
+    avi_start_ms = millis();
+
     Serial.println("Start play loop");
     while (avi_curr_frame < avi_total_frames)
     {
       avi_feed_audio();
-      // avi_draw(0, 0);
-      avi_draw(0, 32);
+      avi_draw(0, 0);
     }
 
     int time_used = millis() - avi_start_ms;
@@ -225,6 +234,10 @@ void loop()
     gfx->printf("Decode audio: %lu ms (%0.1f %%)\n", total_decode_audio_ms, 100.0 * total_decode_audio_ms / time_used);
     gfx->setTextColor(LEGEND_G_COLOR, BLACK);
     gfx->printf("Play audio: %lu ms (%0.1f %%)\n", total_play_audio_ms, 100.0 * total_play_audio_ms / time_used);
+
+#ifdef RGB_PANEL
+    gfx->flush();
+#endif
   }
 
   delay(60 * 1000);

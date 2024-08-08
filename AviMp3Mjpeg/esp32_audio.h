@@ -12,7 +12,7 @@ unsigned long total_read_audio_ms;
 unsigned long total_decode_audio_ms;
 unsigned long total_play_audio_ms;
 
-int _samprate = 0;
+int _samprate = I2S_DEFAULT_SAMPLE_RATE;
 void audioDataCallback(MP3FrameInfo &info, int16_t *pwm_buffer, size_t len, void *ref)
 {
   unsigned long s = millis();

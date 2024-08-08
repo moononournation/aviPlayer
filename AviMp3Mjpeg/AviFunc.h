@@ -19,6 +19,7 @@ char *avi_compressor;
 char *vidbuf;
 long avi_curr_frame;
 long avi_skipped_frames;
+bool avi_skipped_last_frame;
 unsigned long avi_start_ms, avi_next_frame_ms;
 unsigned long avi_total_read_video_ms;
 unsigned long avi_total_decode_video_ms;
@@ -124,22 +125,34 @@ void avi_draw(int x, int y)
       avi_total_read_video_ms += millis() - curr_ms;
       // Serial.printf("frame: %ld, iskeyframe: %ld, video_bytes: %ld, actual_video_size: %ld, audio_bytes: %ld, ESP.getFreeHeap(): %ld\n", avi_curr_frame, iskeyframe, video_bytes, actual_video_size, audio_bytes, (long)ESP.getFreeHeap());
 
-      // Set input buffer and buffer len to io_callback
       curr_ms = millis();
-      jpeg_io->inbuf = (uint8_t *)vidbuf;
-      jpeg_io->inbuf_len = actual_video_size;
+      if ((!avi_skipped_last_frame) || iskeyframe)
+      {
+        avi_skipped_last_frame = false;
 
-      jpeg_dec_parse_header(jpeg_dec, jpeg_io, out_info);
+        jpeg_io->inbuf = (uint8_t *)vidbuf;
+        jpeg_io->inbuf_len = actual_video_size;
 
-      jpeg_io->outbuf = (uint8_t *)output_buf;
+        jpeg_dec_parse_header(jpeg_dec, jpeg_io, out_info);
 
-      jpeg_dec_process(jpeg_dec, jpeg_io);
+        jpeg_io->outbuf = (uint8_t *)output_buf;
 
-      avi_total_decode_video_ms += millis() - curr_ms;
+        jpeg_dec_process(jpeg_dec, jpeg_io);
 
-      curr_ms = millis();
-      gfx->draw16bitBeRGBBitmap(x, y, output_buf, avi_w, avi_h);
-      avi_total_show_video_ms += millis() - curr_ms;
+        avi_total_decode_video_ms += millis() - curr_ms;
+
+        curr_ms = millis();
+#ifdef RGB_PANEL
+        gfx->flush();
+#else
+        gfx->draw16bitBeRGBBitmap(x, y, output_buf, avi_w, avi_h);
+#endif
+        avi_total_show_video_ms += millis() - curr_ms;
+      }
+      else
+      {
+        ++avi_skipped_frames;
+      }
     }
     while (millis() < avi_next_frame_ms)
     {
@@ -149,6 +162,7 @@ void avi_draw(int x, int y)
   else
   {
     ++avi_skipped_frames;
+    avi_skipped_last_frame = true;
     // Serial.printf("Skip frame %ld > %ld\n", millis(), avi_next_frame_ms);
   }
 
