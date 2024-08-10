@@ -1,17 +1,33 @@
-/***
- * Required libraries:
+/*******************************************************************************
+ * AVI Player example
+ *
+ * Dependent libraries:
  * avilib: https://github.com/lanyou1900/avilib.git
- */
-
+ *
+ * Setup steps:
+ * 1. Change your LCD parameters in Arduino_GFX setting
+ * 2. Upload AVI file
+ *   FFat/LittleFS:
+ *     upload FFat (FatFS) data with ESP32 Sketch Data Upload:
+ *     ESP32: https://github.com/lorol/arduino-esp32fs-plugin
+ *   SD:
+ *     Copy files to SD card
+ ******************************************************************************/
 const char *root = "/root";
-// const char *avi_file = "/root/AviPcmu8Cinepak240p15fps.avi";
-const char *avi_file = "/root/AviPcmu8Mjpeg240p15fps.avi";
-// const char *avi_file = "/root/AviPcmu8Mjpeg320p10fps.avi";
+char *avi_filename = (char *)"/root/AviMp3Cinepak240p30fps.avi";
+// char *avi_filename = (char *)"/root/AviMp3Cinepak272p30fps.avi";
+// char *avi_filename = (char *)"/root/AviMp3Cinepak400p10fps.avi";
+// char *avi_filename = (char *)"/root/AviMp3Mjpeg240p15fps.avi";
+// char *avi_filename = (char *)"/root/AviMp3Mjpeg272p15fps.avi";
+// char *avi_filename = (char *)"/root/AviPcmu8Mjpeg240p15fps.avi";
+// char *avi_filename = (char *)"/root/AviPcmu8Mjpeg272p15fps.avi";
 
-#include <WiFi.h>
+#include "T_DECK.h"
 
 #include <FFat.h>
 #include <LittleFS.h>
+#include <SPIFFS.h>
+#include <SD.h>
 #include <SD_MMC.h>
 
 extern "C"
@@ -20,44 +36,65 @@ extern "C"
 }
 
 /* variables */
-static avi_t *a;
-static long frames, estimateBufferSize, aRate, aBytes, aChunks, actual_video_size;
-static long w, h, aChans, aBits, aFormat;
-static double fr;
-static char *compressor;
-static char *vidbuf;
-static char *audbuf;
-static bool isStopped = true;
-static long curr_frame = 0;
-static unsigned long start_ms;
-
-// microSD card
-#define SD_SCK 39
-#define SD_MISO 38
-#define SD_MOSI 40
-#define SD_CS 41
+avi_t *a;
+long frames, estimateBufferSize, aRate, aBytes, aChunks, actual_video_size;
+long w, h, aChans, aBits, aFormat;
+double fr;
+char *compressor;
+char *vidbuf;
+char *audbuf;
+bool isStopped = true;
+long curr_frame = 0;
+unsigned long start_ms;
 
 void setup()
 {
-  WiFi.mode(WIFI_OFF);
-
   Serial.begin(115200);
   // Serial.setDebugOutput(true);
   // while(!Serial);
   Serial.println("AviDryRun");
 
-  if (!FFat.begin(false, root))
+#ifdef PERI_POWERON
+  pinMode(PERI_POWERON, OUTPUT);
+  digitalWrite(PERI_POWERON, HIGH);
+#endif
+
+#ifdef SPI_CS_1
+  pinMode(SPI_CS_1, OUTPUT);
+  digitalWrite(SPI_CS_1, HIGH);
+#endif
+
+#ifdef SPI_CS_2
+  pinMode(SPI_CS_2, OUTPUT);
+  digitalWrite(SPI_CS_2, HIGH);
+#endif
+
+  // If display and SD shared same interface, init SPI first
+#ifdef SPI_SCK
+  SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI);
+#endif
+
+#if defined(SD_D1)
+  SD_MMC.setPins(SD_SCK, SD_MOSI /* CMD */, SD_MISO /* D0 */, SD_D1, SD_D2, SD_CS /* D3 */);
+  if (!SD_MMC.begin(root, false /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_HIGHSPEED))
+#elif defined(SD_SCK)
+  pinMode(SD_CS, OUTPUT);
+  digitalWrite(SD_CS, HIGH);
+  SD_MMC.setPins(SD_SCK, SD_MOSI /* CMD */, SD_MISO /* D0 */);
+  if (!SD_MMC.begin(root, true /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_DEFAULT))
+#elif defined(SD_CS)
+  if (!SD.begin(SD_CS, SPI, 80000000, "/root"))
+#else
+  // if (!FFat.begin(false, root))
   // if (!LittleFS.begin(false, root))
-  // pinMode(SD_CS /* CS */, OUTPUT);
-  // digitalWrite(SD_CS /* CS */, HIGH);
-  // SD_MMC.setPins(SD_SCK /* CLK */, SD_MOSI /* CMD/MOSI */, SD_MISO /* D0/MISO */);
-  // if (!SD_MMC.begin(root, true /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_DEFAULT))
+  // if (!SPIFFS.begin(false, root))
+#endif
   {
     Serial.println("ERROR: File system mount failed!");
   }
   else
   {
-    a = AVI_open_input_file(avi_file, 1);
+    a = AVI_open_input_file(avi_filename, 1);
 
     if (a)
     {
