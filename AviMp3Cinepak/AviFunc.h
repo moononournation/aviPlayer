@@ -330,9 +330,9 @@ void avi_show_stat()
   float arc_end4 = arc_start4 + max(2.0, 360.0 * avi_total_read_audio_ms / time_used);
   for (int i = arc_start4 + 1; i < arc_end4; i += 2)
   {
-    gfx->fillArc(cx, cy, r1, r2, arc_start4 - 90.0, i - 90.0, LEGEND_A_COLOR);
+    gfx->fillArc(cx, cy, r1, r2, arc_start4 - 90.0, i - 90.0, LEGEND_D_COLOR);
   }
-  gfx->fillArc(cx, cy, r1, r2, arc_start4 - 90.0, arc_end4 - 90.0, LEGEND_A_COLOR);
+  gfx->fillArc(cx, cy, r1, r2, arc_start4 - 90.0, arc_end4 - 90.0, LEGEND_D_COLOR);
 
   float arc_start5 = 0;
   float arc_end5 = arc_start5 + max(2.0, 360.0 * total_decode_audio_ms / time_used);
