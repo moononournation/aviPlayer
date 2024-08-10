@@ -4,6 +4,7 @@
  * Dependent libraries:
  * Arduino_GFX: https://github.com/moononournation/Arduino_GFX.git
  * avilib: https://github.com/lanyou1900/avilib.git
+ * ESP32_JPEG: https://github.com/esp-arduino-libs/ESP32_JPEG.git
  *
  * Setup steps:
  * 1. Change your LCD parameters in Arduino_GFX setting
@@ -15,8 +16,8 @@
  *     Copy files to SD card
  ******************************************************************************/
 const char *root = "/root";
-char *avi_filename = (char *)"/root/AviMp3Cinepak240p30fps.avi";
-// char *avi_filename = (char *)"/root/AviMp3Cinepak272p30fps.avi";
+char *avi_filename = (char *)"/root/AviMp3Mjpeg240p15fps.avi";
+// char *avi_filename = (char *)"/root/AviMp3Mjpeg272p15fps.avi";
 
 #include "T_DECK.h"
 
@@ -36,7 +37,7 @@ void setup()
   Serial.begin(115200);
   // Serial.setDebugOutput(true);
   // while(!Serial);
-  Serial.println("AviCinepak");
+  Serial.println("AviMjpeg");
 
   // If display and SD shared same interface, init SPI first
 #ifdef SPI_SCK

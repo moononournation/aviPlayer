@@ -21,7 +21,7 @@
  *
  */
 
-// #define BIG_ENDIAN_PIXEL
+#define BIG_ENDIAN_PIXEL
 // #define USE_DRAW_CALLBACK
 
 #ifdef USE_DRAW_CALLBACK

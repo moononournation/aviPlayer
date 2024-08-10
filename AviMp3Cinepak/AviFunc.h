@@ -1,5 +1,5 @@
-// #define AVI_SUPPORT_CINEPAK
-#define AVI_SUPPORT_MJPEG
+#define AVI_SUPPORT_CINEPAK
+// #define AVI_SUPPORT_MJPEG
 #define AVI_SUPPORT_AUDIO
 
 extern "C"

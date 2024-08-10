@@ -5,12 +5,8 @@
 #define I2S_OUTPUT_NUM I2S_NUM_0
 #define I2S_DEFAULT_SAMPLE_RATE 480000
 
-char *audbuf;
-size_t audbuf_read;
-size_t audbuf_remain;
-unsigned long total_read_audio_ms;
-unsigned long total_decode_audio_ms;
-unsigned long total_play_audio_ms;
+extern unsigned long total_decode_audio_ms;
+extern unsigned long total_play_audio_ms;
 
 int _samprate = I2S_DEFAULT_SAMPLE_RATE;
 void audioDataCallback(MP3FrameInfo &info, int16_t *pwm_buffer, size_t len, void *ref)
@@ -104,10 +100,6 @@ void mp3_player_task(void *pvParam)
 
 BaseType_t mp3_player_task_start()
 {
-  total_read_audio_ms = 0;
-  total_decode_audio_ms = 0;
-  total_play_audio_ms = 0;
-
   return xTaskCreatePinnedToCore(
       (TaskFunction_t)mp3_player_task,
       (const char *const)"MP3 Player Task",
