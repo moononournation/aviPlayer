@@ -120,6 +120,8 @@ void loop()
     Serial.println("AVI start");
     gfx->fillScreen(BLACK);
 
+    i2s_set_sample_rate(avi_aRate);
+
     avi_feed_audio();
 
     Serial.println("Start play audio task");

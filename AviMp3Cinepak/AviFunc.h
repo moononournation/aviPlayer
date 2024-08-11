@@ -7,18 +7,20 @@ extern "C"
 #include <avilib.h>
 }
 
-#define MAX_AUDIO_FRAME_SIZE 1024 * 2
+#define MAX_AUDIO_FRAME_SIZE 1024 * 3
 
 #define UNKNOWN_CODEC_CODE -1
+#define PCM_CODEC_CODE 1
+#define MP3_CODEC_CODE 85
 
 #ifdef AVI_SUPPORT_CINEPAK
-#define CINEPAK_CODEC_CODE 1
+#define CINEPAK_CODEC_CODE 1001
 #include "cinepak.h"
 CinepakDecoder cinepak;
 #endif // AVI_SUPPORT_CINEPAK
 
 #ifdef AVI_SUPPORT_MJPEG
-#define MJPEG_CODEC_CODE 2
+#define MJPEG_CODEC_CODE 1002
 #include <ESP32_JPEG_Library.h>
 jpeg_dec_handle_t *jpeg_dec;
 jpeg_dec_io_t *jpeg_io;
@@ -278,7 +280,6 @@ void avi_show_stat()
   Serial.printf("Decode video: %lu ms (%0.1f %%)\n", avi_total_decode_video_ms, 100.0 * avi_total_decode_video_ms / time_used);
   Serial.printf("Show video: %lu ms (%0.1f %%)\n", avi_total_show_video_ms, 100.0 * avi_total_show_video_ms / time_used);
 #ifdef AVI_SUPPORT_AUDIO
-  total_decode_audio_ms -= total_play_audio_ms;
   Serial.printf("Read audio: %lu ms (%0.1f %%)\n", avi_total_read_audio_ms, 100.0 * avi_total_read_audio_ms / time_used);
   Serial.printf("Decode audio: %lu ms (%0.1f %%)\n", total_decode_audio_ms, 100.0 * total_decode_audio_ms / time_used);
   Serial.printf("Play audio: %lu ms (%0.1f %%)\n", total_play_audio_ms, 100.0 * total_play_audio_ms / time_used);
@@ -338,9 +339,17 @@ void avi_show_stat()
   float arc_end5 = arc_start5 + max(2.0, 360.0 * total_decode_audio_ms / time_used);
   for (int i = arc_start5 + 1; i < arc_end5; i += 2)
   {
-    gfx->fillArc(cx, cy, r2, 0, arc_start5 - 90.0, i - 90.0, LEGEND_E_COLOR);
+    gfx->fillArc(cx, cy, r2, 0, arc_start5 - 90.0, i - 90.0, LEGEND_G_COLOR);
   }
-  gfx->fillArc(cx, cy, r2, 0, arc_start5 - 90.0, arc_end5 - 90.0, LEGEND_E_COLOR);
+  gfx->fillArc(cx, cy, r2, 0, arc_start5 - 90.0, arc_end5 - 90.0, LEGEND_G_COLOR);
+
+  float arc_start6 = arc_end5;
+  float arc_end6 = arc_start6 + max(2.0, 360.0 * total_play_audio_ms / time_used);
+  for (int i = arc_start6 + 1; i < arc_end6; i += 2)
+  {
+    gfx->fillArc(cx, cy, r2, 0, arc_start6 - 90.0, i - 90.0, LEGEND_H_COLOR);
+  }
+  gfx->fillArc(cx, cy, r2, 0, arc_start6 - 90.0, arc_end6 - 90.0, LEGEND_H_COLOR);
 #endif // AVI_SUPPORT_AUDIO
 
   gfx->setCursor(0, 0);
@@ -359,9 +368,9 @@ void avi_show_stat()
 #ifdef AVI_SUPPORT_AUDIO
   gfx->setTextColor(LEGEND_D_COLOR, BLACK);
   gfx->printf("Read audio: %lu ms (%0.1f %%)\n", avi_total_read_audio_ms, 100.0 * avi_total_read_audio_ms / time_used);
-  gfx->setTextColor(LEGEND_E_COLOR, BLACK);
-  gfx->printf("Decode audio: %lu ms (%0.1f %%)\n", total_decode_audio_ms, 100.0 * total_decode_audio_ms / time_used);
   gfx->setTextColor(LEGEND_G_COLOR, BLACK);
+  gfx->printf("Decode audio: %lu ms (%0.1f %%)\n", total_decode_audio_ms, 100.0 * total_decode_audio_ms / time_used);
+  gfx->setTextColor(LEGEND_H_COLOR, BLACK);
   gfx->printf("Play audio: %lu ms (%0.1f %%)\n", total_play_audio_ms, 100.0 * total_play_audio_ms / time_used);
 #endif // AVI_SUPPORT_AUDIO
 

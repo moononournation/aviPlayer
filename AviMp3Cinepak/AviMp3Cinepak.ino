@@ -37,7 +37,7 @@ void setup()
   Serial.begin(115200);
   // Serial.setDebugOutput(true);
   // while(!Serial);
-  Serial.println("AviMp3Cinepak");
+  Serial.println("AviPcmu8Mjpeg");
 
   // If display and SD shared same interface, init SPI first
 #ifdef SPI_SCK
@@ -118,6 +118,8 @@ void loop()
   {
     Serial.println("AVI start");
     gfx->fillScreen(BLACK);
+
+    i2s_set_sample_rate(avi_aRate);
 
     avi_feed_audio();
 

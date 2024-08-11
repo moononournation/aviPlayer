@@ -8,28 +8,13 @@
 extern unsigned long total_decode_audio_ms;
 extern unsigned long total_play_audio_ms;
 
-int _samprate = I2S_DEFAULT_SAMPLE_RATE;
-void audioDataCallback(MP3FrameInfo &info, int16_t *pwm_buffer, size_t len, void *ref)
+uint32_t i2s_curr_sample_rate = I2S_DEFAULT_SAMPLE_RATE;
+void i2s_set_sample_rate(uint32_t sample_rate)
 {
-  unsigned long s = millis();
-  if (_samprate != info.samprate)
-  {
-    Serial.printf("bitrate: %d, nChans: %d, samprate: %d, bitsPerSample: %d, outputSamps: %d, layer: %d, version: %d\n",
-                  info.bitrate, info.nChans, info.samprate, info.bitsPerSample, info.outputSamps, info.layer, info.version);
-    i2s_set_clk(I2S_OUTPUT_NUM, info.samprate /* sample_rate */, info.bitsPerSample /* bits_cfg */, (info.nChans == 2) ? I2S_CHANNEL_STEREO : I2S_CHANNEL_MONO /* channel */);
-    _samprate = info.samprate;
-  }
-  for (int i = 0; i < len; i++)
-  {
-    pwm_buffer[i] = pwm_buffer[i] * I2S_DEFAULT_GAIN_LEVEL;
-  }
-  size_t i2s_bytes_written = 0;
-  i2s_write(I2S_OUTPUT_NUM, pwm_buffer, len * 2, &i2s_bytes_written, portMAX_DELAY);
-  // Serial.printf("len: %d, i2s_bytes_written: %d\n", len, i2s_bytes_written);
-  total_play_audio_ms += millis() - s;
+  Serial.printf("i2s_set_sample_rate: %lu\n", sample_rate);
+  i2s_curr_sample_rate = sample_rate;
+  i2s_set_clk(I2S_OUTPUT_NUM, i2s_curr_sample_rate, I2S_BITS_PER_SAMPLE_16BIT, I2S_CHANNEL_STEREO);
 }
-
-libhelix::MP3DecoderHelix mp3(audioDataCallback);
 
 esp_err_t i2s_init()
 {
@@ -37,13 +22,13 @@ esp_err_t i2s_init()
 
   i2s_config_t i2s_config;
   i2s_config.mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX);
-  i2s_config.sample_rate = I2S_DEFAULT_SAMPLE_RATE;
+  i2s_config.sample_rate = i2s_curr_sample_rate;
   i2s_config.bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT;
   i2s_config.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
   i2s_config.communication_format = I2S_COMM_FORMAT_STAND_I2S;
   i2s_config.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1;
   i2s_config.dma_buf_count = 32;
-  i2s_config.dma_buf_len = 320;
+  i2s_config.dma_buf_len = 480;
   i2s_config.use_apll = false;
   i2s_config.tx_desc_auto_clear = true;
   i2s_config.fixed_mclk = 0;
@@ -64,6 +49,75 @@ esp_err_t i2s_init()
 
   return ret_val;
 }
+
+void pcm_player_task(void *pvParam)
+{
+  unsigned long ms;
+  char *p;
+  size_t i2s_bytes_written = 0;
+  uint16_t sample[2];
+
+  Serial.printf("pcm_player_task start\n");
+  do
+  {
+    ms = millis();
+
+    p = audbuf;
+    while (audbuf_remain > 0)
+    {
+      sample[0] = ((*p++) << 8) * I2S_DEFAULT_GAIN_LEVEL;
+      sample[1] = sample[0];
+      i2s_write(I2S_NUM_0, sample, 4, &i2s_bytes_written, portMAX_DELAY);
+
+      --audbuf_remain;
+    }
+
+    total_play_audio_ms += millis() - ms;
+
+    vTaskDelay(pdMS_TO_TICKS(1));
+  } while (audbuf_read > 0);
+
+  Serial.printf("pcm_player_task stop\n");
+
+  i2s_zero_dma_buffer(I2S_OUTPUT_NUM);
+  vTaskDelete(NULL);
+}
+
+BaseType_t pcm_player_task_start()
+{
+  return xTaskCreatePinnedToCore(
+      (TaskFunction_t)pcm_player_task,
+      (const char *const)"PCM Player Task",
+      (const uint32_t)2000,
+      (void *const)NULL,
+      (UBaseType_t)configMAX_PRIORITIES - 1,
+      (TaskHandle_t *const)NULL,
+      (const BaseType_t)0);
+}
+
+void mp3_audio_callback(MP3FrameInfo &info, int16_t *pwm_buffer, size_t len, void *ref)
+{
+  unsigned long s = millis();
+  if (i2s_curr_sample_rate != info.samprate)
+  {
+    Serial.printf("bitrate: %d, nChans: %d, samprate: %d, bitsPerSample: %d, outputSamps: %d, layer: %d, version: %d\n",
+                  info.bitrate, info.nChans, info.samprate, info.bitsPerSample, info.outputSamps, info.layer, info.version);
+    i2s_curr_sample_rate = info.samprate;
+    i2s_set_clk(I2S_OUTPUT_NUM, i2s_curr_sample_rate, I2S_BITS_PER_SAMPLE_16BIT, I2S_CHANNEL_STEREO);
+  }
+  for (int i = 0; i < len; i++)
+  {
+    pwm_buffer[i] = pwm_buffer[i] * I2S_DEFAULT_GAIN_LEVEL;
+  }
+  size_t i2s_bytes_written = 0;
+  i2s_write(I2S_OUTPUT_NUM, pwm_buffer, len * 2, &i2s_bytes_written, portMAX_DELAY);
+  // Serial.printf("len: %d, i2s_bytes_written: %d\n", len, i2s_bytes_written);
+  s = millis() - s;
+  total_play_audio_ms += s;
+  total_decode_audio_ms -= s;
+}
+
+libhelix::MP3DecoderHelix mp3(mp3_audio_callback);
 
 void mp3_player_task(void *pvParam)
 {
