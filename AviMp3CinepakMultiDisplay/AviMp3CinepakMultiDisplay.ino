@@ -27,6 +27,7 @@ extern "C"
 #define GFX_BL 4
 Arduino_DataBus *bus = new Arduino_ESP32SPI(16 /* DC */, 5 /* CS */, 18 /* SCK */, 19 /* MOSI */, GFX_NOT_DEFINED /* MISO */, VSPI /* spi_num */);
 Arduino_GFX *gfx = new Arduino_ST7789(bus, 23 /* RST */, 0 /* rotation */, true /* IPS */, 136 /* width */, 240 /* height */, 52 /* col offset 1 */, 40 /* row offset 1 */, 52 /* col offset 2 */, 40 /* row offset 2 */);
+#define GFX_SPEED 80000000UL
 
 Arduino_DataBus *bus1 = new Arduino_ESP32SPI(15 /* DC */, 17 /* CS */, 12 /* SCK */, 13 /* MOSI */, GFX_NOT_DEFINED /* MISO */, HSPI /* spi_num */);
 Arduino_GFX *gfx_tl = new Arduino_ST7789(bus1, GFX_NOT_DEFINED /* RST */, 3 /* rotation */, true /* IPS */, 172 /* width */, 320 /* height */, 34 /* col offset 1 */, 0 /* row offset 1 */, 34 /* col offset 2 */, 0 /* row offset 2 */);
@@ -118,7 +119,7 @@ void setup()
 #endif
 
   Serial.println("Init display");
-  if (!gfx->begin(80000000))
+  if (!gfx->begin(GFX_SPEED))
   {
     Serial.println("Init display failed!");
   }
@@ -129,7 +130,7 @@ void setup()
   digitalWrite(GFX_BL, HIGH);
 #endif
 
-  if (!gfx_tl->begin(80000000))
+  if (!gfx_tl->begin(GFX_SPEED))
   {
     Serial.println("Init display gfx_tl failed!");
   }
@@ -137,7 +138,7 @@ void setup()
   gfx_tl->setRotation(3); // hack
   gfx_tl->fillScreen(ORANGE);
 
-  if (!gfx_tr->begin(80000000))
+  if (!gfx_tr->begin(GFX_SPEED))
   {
     Serial.println("Init display gfx_tr failed!");
   }

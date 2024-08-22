@@ -61,7 +61,7 @@ void setup()
 
   // Init Display
   // if (!gfx->begin())
-  if (!gfx->begin(80000000))
+  if (!gfx->begin(GFX_SPEED))
   {
     Serial.println("gfx->begin() failed!");
   }
