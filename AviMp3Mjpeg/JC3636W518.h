@@ -30,7 +30,7 @@ Arduino_ST77916 *gfx = new Arduino_ST77916(bus, 47 /* RST */, 0 /* rotation */, 
 #define SD_CS 5   // D3
 
 // I2S
-#define I2S_DEFAULT_GAIN_LEVEL 0.5
+#define I2S_DEFAULT_GAIN_LEVEL 0.05
 #define I2S_OUTPUT_NUM I2S_NUM_0
 #define I2S_MCLK -1
 #define I2S_BCLK 18
