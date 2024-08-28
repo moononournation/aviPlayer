@@ -17,9 +17,11 @@
  *     Copy files to SD card
  ******************************************************************************/
 const char *root = "/root";
-char *avi_filename = (char *)"/root/AviMp3Mjpeg240p30fps.avi";
+// char *avi_filename = (char *)"/root/AviMp3Mjpeg240p30fps.avi";
+char *avi_filename = (char *)"/root/AviMp3Mjpeg360sq.avi";
 
-#include "T_DECK.h"
+// #include "T_DECK.h"
+#include "JC3636W518.h"
 
 #include <FFat.h>
 #include <LittleFS.h>

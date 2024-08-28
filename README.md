@@ -36,4 +36,6 @@ ffmpeg -i input.mp4 -c:a mp3 -c:v mjpeg -q:v 7 -vf "fps=15,scale=-1:240:flags=la
 ffmpeg -i input.mp4 -c:a mp3 -c:v mjpeg -q:v 7 -vf "fps=15,scale=-1:272:flags=lanczos,crop=480:272:(in_w-480)/2:0" AviMp3Mjpeg272p15fps.avi
 
 ffmpeg -i input.mp4 -ac 1 -c:a pcm_u8 -c:v mjpeg -q:v 7 -vf "fps=15,scale=-1:240:flags=lanczos,crop=320:240:(in_w-320)/2:0" AviPcmu8Mjpeg240p15fps.avi
+
+ffmpeg -y -i input.mp4 -c:a mp3 -c:v mjpeg -q:v 7 -vf "scale=-1:360:flags=lanczos,crop=360:360:(in_w-360)/2:0" AviMp3Mjpeg360sq.avi
 ```
