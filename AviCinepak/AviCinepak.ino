@@ -16,7 +16,6 @@
  ******************************************************************************/
 const char *root = "/root";
 char *avi_filename = (char *)"/root/AviMp3Cinepak240p30fps.avi";
-// char *avi_filename = (char *)"/root/AviMp3Cinepak272p30fps.avi";
 
 #include "T_DECK.h"
 
