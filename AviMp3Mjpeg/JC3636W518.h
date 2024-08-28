@@ -6,10 +6,12 @@
 Arduino_DataBus *bus = new Arduino_ESP32QSPI(
     10 /* cs */, 9 /* sck */, 11 /* d0 */, 12 /* d1 */, 13 /* d2 */, 14 /* d3 */);
 Arduino_ST77916 *gfx = new Arduino_ST77916(bus, 47 /* RST */, 0 /* rotation */, true /* IPS */, 360 /* width */, 360 /* height */);
+#define GFX_SPEED 80000000UL
 
 // I2C
 #define I2C_SDA 7
 #define I2C_SCL 8
+#define I2C_FREQ 400000UL
 
 // Touchscreen
 #define TOUCH_MODULES_CST_SELF
@@ -28,6 +30,8 @@ Arduino_ST77916 *gfx = new Arduino_ST77916(bus, 47 /* RST */, 0 /* rotation */, 
 #define SD_CS 5   // D3
 
 // I2S
+#define I2S_DEFAULT_GAIN_LEVEL 0.5
+#define I2S_OUTPUT_NUM I2S_NUM_0
 #define I2S_MCLK -1
 #define I2S_BCLK 18
 #define I2S_LRCK 16
