@@ -12,15 +12,15 @@ extern "C"
 #define UNKNOWN_CODEC_CODE -1
 #define PCM_CODEC_CODE 1
 #define MP3_CODEC_CODE 85
+#define CINEPAK_CODEC_CODE 1001
+#define MJPEG_CODEC_CODE 1002
 
 #ifdef AVI_SUPPORT_CINEPAK
-#define CINEPAK_CODEC_CODE 1001
 #include "cinepak.h"
 CinepakDecoder cinepak;
 #endif // AVI_SUPPORT_CINEPAK
 
 #ifdef AVI_SUPPORT_MJPEG
-#define MJPEG_CODEC_CODE 1002
 #include <ESP32_JPEG_Library.h>
 jpeg_dec_handle_t *jpeg_dec;
 jpeg_dec_io_t *jpeg_io;
@@ -231,7 +231,8 @@ bool avi_decode()
 
 void avi_draw(int x, int y)
 {
-  if (millis() < avi_next_frame_ms) // check show frame or skip frame
+  if ((avi_vcodec == MJPEG_CODEC_CODE) // always show decoded MJPEG frame
+      || (millis() < avi_next_frame_ms)) // skip lagging frame
   {
     unsigned long curr_ms = millis();
 #ifdef RGB_PANEL
