@@ -65,7 +65,11 @@ void pcm_player_task(void *pvParam)
     p = audbuf;
     while (audbuf_remain > 0)
     {
+#ifdef I2S_DEFAULT_GAIN_LEVEL
       sample[0] = ((*p++) << 8) * I2S_DEFAULT_GAIN_LEVEL;
+#else
+      sample[0] = ((*p++) << 8);
+#endif
       sample[1] = sample[0];
       i2s_write(I2S_NUM_0, sample, 4, &i2s_bytes_written, portMAX_DELAY);
 
@@ -105,10 +109,12 @@ void mp3_audio_callback(MP3FrameInfo &info, int16_t *pwm_buffer, size_t len, voi
     i2s_curr_sample_rate = info.samprate;
     i2s_set_clk(I2S_OUTPUT_NUM, i2s_curr_sample_rate, I2S_BITS_PER_SAMPLE_16BIT, I2S_CHANNEL_STEREO);
   }
+#ifdef I2S_DEFAULT_GAIN_LEVEL
   for (int i = 0; i < len; i++)
   {
     pwm_buffer[i] = pwm_buffer[i] * I2S_DEFAULT_GAIN_LEVEL;
   }
+#endif
   size_t i2s_bytes_written = 0;
   i2s_write(I2S_OUTPUT_NUM, pwm_buffer, len * 2, &i2s_bytes_written, portMAX_DELAY);
   // Serial.printf("len: %d, i2s_bytes_written: %d\n", len, i2s_bytes_written);

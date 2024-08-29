@@ -33,7 +33,6 @@ const char *avi_folder = "/avi_240p";
 // uncomment one of below dev device pin definition header
 #include "T_DECK.h"
 // #include "ESP32_4827A043.h"
-// #include "ESP32_C3.h"
 // #include "JC3248W535.h"
 // #include "JC3636W518.h"
 // #include "JC4827W543.h"
