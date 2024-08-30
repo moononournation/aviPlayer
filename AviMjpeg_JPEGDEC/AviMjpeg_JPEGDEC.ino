@@ -27,7 +27,7 @@ char *avi_filename = (char *)"/root/AviMp3Mjpeg240p15fps.avi";
 #include <SD.h>
 #include <SD_MMC.h>
 
-#include "AviFunc.h"
+#include "AviFunc_callback.h"
 
 // drawing callback
 int drawMCU(JPEGDRAW *pDraw)

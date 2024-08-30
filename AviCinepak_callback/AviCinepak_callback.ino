@@ -15,9 +15,11 @@
  *     Copy files to SD card
  ******************************************************************************/
 const char *root = "/root";
-char *avi_filename = (char *)"/root/AviMp3Cinepak240p30fps.avi";
+// char *avi_filename = (char *)"/root/AviMp3Cinepak240p30fps.avi";
+char *avi_filename = (char *)"/root/AviMp3Cinepak288x240.avi";
 
-#include "T_DECK.h"
+// #include "T_DECK.h"
+#include "ESP32_C3.h"
 
 #include <FFat.h>
 #include <LittleFS.h>
@@ -28,7 +30,7 @@ char *avi_filename = (char *)"/root/AviMp3Cinepak240p30fps.avi";
 size_t output_buf_size;
 uint16_t *output_buf;
 
-#include "AviFunc.h"
+#include "AviFunc_callback.h"
 
 // drawing callback
 void draw_callback(uint16_t x, uint16_t y, uint16_t *p, uint16_t w, uint16_t h)
@@ -91,7 +93,7 @@ void setup()
 #elif defined(SD_CS)
   if (!SD.begin(SD_CS, SPI, 80000000, "/root"))
 #else
-  // if (!FFat.begin(false, root))
+  if (!FFat.begin(false, root))
   // if (!LittleFS.begin(false, root))
   // if (!SPIFFS.begin(false, root))
 #endif
