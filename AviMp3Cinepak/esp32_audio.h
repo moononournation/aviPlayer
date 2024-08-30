@@ -55,7 +55,7 @@ void pcm_player_task(void *pvParam)
   unsigned long ms;
   char *p;
   size_t i2s_bytes_written = 0;
-  uint16_t sample[2];
+  int16_t sample[2];
 
   Serial.printf("pcm_player_task start\n");
   do
@@ -66,9 +66,9 @@ void pcm_player_task(void *pvParam)
     while (audbuf_remain > 0)
     {
 #ifdef I2S_DEFAULT_GAIN_LEVEL
-      sample[0] = ((*p++) << 8) * I2S_DEFAULT_GAIN_LEVEL;
+      sample[0] = ((int16_t)(*p++) - 128) * (I2S_DEFAULT_GAIN_LEVEL * 65536);
 #else
-      sample[0] = ((*p++) << 8);
+      sample[0] = (((int16_t)(*p++) - 128) << 8);
 #endif
       sample[1] = sample[0];
       i2s_write(I2S_NUM_0, sample, 4, &i2s_bytes_written, portMAX_DELAY);
