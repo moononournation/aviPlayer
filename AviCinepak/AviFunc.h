@@ -7,6 +7,8 @@ extern "C"
 #include <avilib.h>
 }
 
+#define SKIP_FRAME_TOLERANT_MS 250
+
 #define MAX_AUDIO_FRAME_SIZE 1024 * 3
 
 #define UNKNOWN_CODEC_CODE -1
@@ -38,7 +40,7 @@ char *vidbuf;
 long avi_curr_frame;
 int avi_curr_is_key_frame;
 long avi_skipped_frames;
-unsigned long avi_start_ms, avi_next_frame_ms;
+unsigned long avi_start_ms, avi_next_frame_ms, avi_skip_frame_ms;
 unsigned long avi_total_read_video_ms;
 unsigned long avi_total_decode_video_ms;
 unsigned long avi_total_show_video_ms;
@@ -169,12 +171,14 @@ void avi_feed_audio()
 bool avi_decode()
 {
   avi_next_frame_ms = avi_start_ms + ((avi_curr_frame + 1) * 1000 / avi_fr);
+  avi_skip_frame_ms = avi_next_frame_ms + SKIP_FRAME_TOLERANT_MS;
 
 #ifdef AVI_SUPPORT_MJPEG
   if (
-      (avi_vcodec == MJPEG_CODEC_CODE) && (millis() >= avi_next_frame_ms) // MJPEG can direct skip decode frame
+      (avi_vcodec == MJPEG_CODEC_CODE) && (millis() >= avi_skip_frame_ms) // MJPEG can direct skip decode frame
   )
   {
+    // Serial.printf("Skipped frame %ld\n", avi_curr_frame);
     ++avi_curr_frame;
     ++avi_skipped_frames;
     return false;
@@ -196,12 +200,22 @@ bool avi_decode()
       unsigned long curr_ms = millis();
       actual_video_size = AVI_read_frame(avi, vidbuf, &avi_curr_is_key_frame);
       avi_total_read_video_ms += millis() - curr_ms;
+#ifdef AVI_SUPPORT_AUDIO
       // Serial.printf("frame: %ld, avi_curr_is_key_frame: %ld, video_bytes: %ld, actual_video_size: %ld, audio_bytes: %ld, ESP.getFreeHeap(): %ld\n", avi_curr_frame, avi_curr_is_key_frame, video_bytes, actual_video_size, audio_bytes, (long)ESP.getFreeHeap());
+#else
+      // Serial.printf("frame: %ld, avi_curr_is_key_frame: %ld, video_bytes: %ld, actual_video_size: %ld, ESP.getFreeHeap(): %ld\n", avi_curr_frame, avi_curr_is_key_frame, video_bytes, actual_video_size, (long)ESP.getFreeHeap());
+#endif
 
       curr_ms = millis();
       if (avi_vcodec == UNKNOWN_CODEC_CODE)
       {
       }
+#ifdef AVI_SUPPORT_CINEPAK
+      else if (avi_vcodec == CINEPAK_CODEC_CODE)
+      {
+        cinepak.decodeFrame((uint8_t *)vidbuf, actual_video_size, output_buf, output_buf_size);
+      }
+#endif // AVI_SUPPORT_CINEPAK
 #ifdef AVI_SUPPORT_MJPEG
       else if (avi_vcodec == MJPEG_CODEC_CODE)
       {
@@ -215,12 +229,6 @@ bool avi_decode()
         jpeg_dec_process(jpeg_dec, jpeg_io);
       }
 #endif // AVI_SUPPORT_MJPEG
-#ifdef AVI_SUPPORT_CINEPAK
-      else if (avi_vcodec == CINEPAK_CODEC_CODE)
-      {
-        cinepak.decodeFrame((uint8_t *)vidbuf, actual_video_size, output_buf, output_buf_size);
-      }
-#endif // AVI_SUPPORT_CINEPAK
       avi_total_decode_video_ms += millis() - curr_ms;
 
       ++avi_curr_frame;
@@ -231,8 +239,8 @@ bool avi_decode()
 
 void avi_draw(int x, int y)
 {
-  if ((avi_vcodec == MJPEG_CODEC_CODE) // always show decoded MJPEG frame
-      || (millis() < avi_next_frame_ms)) // skip lagging frame
+  if ((avi_vcodec == MJPEG_CODEC_CODE)   // always show decoded MJPEG frame
+      || (millis() < avi_skip_frame_ms)) // skip lagging frame
   {
     unsigned long curr_ms = millis();
 #ifdef RGB_PANEL
