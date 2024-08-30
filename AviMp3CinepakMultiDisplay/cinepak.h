@@ -21,7 +21,7 @@
  *
  */
 
-// #define BIG_ENDIAN_PIXEL
+#define BIG_ENDIAN_PIXEL
 #define USE_DRAW_CALLBACK
 
 #ifdef USE_DRAW_CALLBACK
@@ -87,7 +87,7 @@ public:
 		_height = readUint16BE();
 		_stripCount = readUint16BE();
 
-		// log_i("Cinepak Frame: Width = %d, Height = %d, Strip Count = %d", _width, _height, _stripCount);
+		// Serial.printf("Cinepak Frame: Width = %d, Height = %d, Strip Count = %d\n", _width, _height, _stripCount);
 
 		// Borrowed from FFMPEG. This should cut out the extra data Cinepak for Sega has (which is useless).
 		// The theory behind this is that this is here to confuse standard Cinepak decoders. But, we won't let that happen! ;)
@@ -107,7 +107,7 @@ public:
 
 		for (uint16_t i = 0; i < _stripCount; i++)
 		{
-			_data_pos += 2;											 // Ignore, substitute with our own.
+			_data_pos += 2;						 // Ignore, substitute with our own.
 			_strip_length = readUint16BE() - 12; // Subtract the 12 uint8_t header
 			_strip_top = _y;
 			_data_pos += 2; // Ignore, substitute with our own.
@@ -150,7 +150,7 @@ public:
 					decodeVectors(chunkID, chunkSize);
 					break;
 				default:
-					log_i("Unknown Cinepak chunk ID %02x", chunkID);
+					// Serial.printf("Unknown Cinepak chunk ID %02x\n", chunkID);
 					return;
 				}
 
@@ -239,7 +239,7 @@ private:
 
 	void loadCodebook(uint16_t *codeblock, uint8_t chunkID, uint32_t chunkSize)
 	{
-		// log_i("loadCodebook(%d, %d, %d)", chunkID, chunkSize);
+		// Serial.printf("loadCodebook(%d, %d, %d)\n", chunkID, chunkSize);
 
 		int32_t startPos = _data_pos;
 		uint32_t flag = 0, mask = 0;
@@ -289,7 +289,10 @@ private:
 
 	void decodeVectors(uint8_t chunkID, uint32_t chunkSize)
 	{
+		// Serial.printf("decodeVectors(), chunkSize: %lu, _strip_top: %d, _strip_bottom: %d\n", chunkSize, _strip_top, _strip_bottom);
+
 		uint32_t flag = 0, mask = 0;
+		uint16_t x, y;
 		uint16_t *row0;
 		uint16_t *row1;
 		uint16_t *row2;
@@ -297,13 +300,16 @@ private:
 		int32_t startPos = _data_pos;
 		uint16_t *codeblock;
 
-		for (uint16_t y = _strip_top; y < _strip_bottom; y += 4)
+#ifdef USE_DRAW_CALLBACK
+		uint16_t w = _iskeyframe ? _width : 4;
+#endif
+		for (y = _strip_top; y < _strip_bottom; y += 4)
 		{
 #ifdef USE_DRAW_CALLBACK
 			row0 = _output_buf;
-			row1 = row0 + (_iskeyframe ? _width : 4);
-			row2 = row1 + (_iskeyframe ? _width : 4);
-			row3 = row2 + (_iskeyframe ? _width : 4);
+			row1 = row0 + w;
+			row2 = row1 + w;
+			row3 = row2 + w;
 #else
 			row0 = _output_buf + (y * _width);
 			row1 = row0 + _width;
@@ -311,7 +317,7 @@ private:
 			row3 = row2 + _width;
 #endif
 
-			for (uint16_t x = 0; x < _width; x += 4)
+			for (x = 0; x < _width; x += 4)
 			{
 				if ((chunkID & 0x01) && !(mask >>= 1))
 				{
