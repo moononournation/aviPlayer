@@ -13,8 +13,8 @@ Arduino_ST7789 *gfx = new Arduino_ST7789(bus, 2 /* RST */, 1 /* rotation */, tru
 #define GFX_SPEED 80000000UL
 
 // Button
-// #define LEFT_BTN_PIN 0
-// #define RIGHT_BTN_PIN 21
+// #define BTN_A_PIN 0
+// #define BTN_B_PIN 21
 
 // I2C
 // #define I2C_SDA 18
