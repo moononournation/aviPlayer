@@ -28,14 +28,16 @@ const char *root = "/root";
 // const char *avi_folder = "/";
 const char *avi_folder = "/avi_240p";
 // const char *avi_folder = "/avi_272p";
+// const char *avi_folder = "/avi288x240";
 // const char *avi_folder = "/avi320x480";
 
-// uncomment one of below dev device pin definition header
-#include "T_DECK.h"
+// uncomment one and only one of below dev device pin definition header
+// #include "iBubly.h"
 // #include "ESP32_4827A043.h"
 // #include "JC3248W535.h"
 // #include "JC3636W518.h"
 // #include "JC4827W543.h"
+#include "T_DECK.h"
 
 #include <FFat.h>
 #include <LittleFS.h>

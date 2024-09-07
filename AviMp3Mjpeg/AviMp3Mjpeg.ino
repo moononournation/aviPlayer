@@ -17,11 +17,14 @@
  *     Copy files to SD card
  ******************************************************************************/
 const char *root = "/root";
-char *avi_filename = (char *)"/root/AviMp3Mjpeg240p30fps.avi";
+// char *avi_filename = (char *)"/root/AviMp3Mjpeg240p30fps.avi";
+char *avi_filename = (char *)"/root/AviMp3Mjpeg288x240.avi";
 // char *avi_filename = (char *)"/root/AviMp3Mjpeg360sq.avi";
 
-#include "T_DECK.h"
+// uncomment one and only one of below dev device pin definition header
+#include "iBubly.h"
 // #include "JC3636W518.h"
+// #include "T_DECK.h"
 
 #include <FFat.h>
 #include <LittleFS.h>

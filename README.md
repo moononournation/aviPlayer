@@ -46,6 +46,12 @@ ffmpeg -y -i input.mp4 -ac 2 -ar 44100 -af loudnorm -c:a mp3 -c:v mjpeg -q:v 7 -
 ffmpeg -y -i input.mp4 -ac 2 -ar 44100 -af loudnorm -c:a mp3 -c:v cinepak -q:v 20 -vf "fps=10,scale=800:-1:flags=lanczos,crop=800:400:0:(in_h-400)/2" AviMp3Cinepak400p10fps.avi
 ```
 
+### AVI for iBubly
+
+```sh
+ffmpeg -y -i input.mp4 -ac 2 -ar 44100 -af loudnorm -c:a mp3 -c:v mjpeg -q:v 7 -vf "fps=15,scale=-1:240:flags=lanczos,crop=288:240:(in_w-288)/2:0" AviMp3Mjpeg288x240.avi
+```
+
 ### AVI for ESP32-C3
 
 ```sh
