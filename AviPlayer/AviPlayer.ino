@@ -215,8 +215,8 @@ void loop()
             avi_close();
             Serial.println("AVI end");
 
-            avi_show_stat();
-            delay(5000); // 5 seconds
+            // avi_show_stat();
+            // delay(5000); // 5 seconds
           }
         }
       }
