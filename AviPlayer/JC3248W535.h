@@ -8,7 +8,7 @@ Arduino_DataBus *bus = new Arduino_ESP32QSPI(
 Arduino_AXS15231B *g = new Arduino_AXS15231B(bus, GFX_NOT_DEFINED /* RST */, 0 /* rotation */, false /* IPS */, 320 /* width */, 480 /* height */);
 #define CANVAS
 Arduino_Canvas *gfx = new Arduino_Canvas(320 /* width */, 480 /* height */, g, 0 /* output_x */, 0 /* output_y */, 1 /* rotation */);
-#define CANVAS_R1
+// #define CANVAS_R1
 #define GFX_SPEED 40000000UL
 
 // Button
@@ -37,7 +37,7 @@ Arduino_Canvas *gfx = new Arduino_Canvas(320 /* width */, 480 /* height */, g, 0
 #define SD_CS 10 // D3
 
 // I2S
-#define I2S_DEFAULT_GAIN_LEVEL 0.5
+#define I2S_DEFAULT_GAIN_LEVEL 0.8
 #define I2S_OUTPUT_NUM I2S_NUM_0
 #define I2S_MCLK -1
 #define I2S_BCLK 42
