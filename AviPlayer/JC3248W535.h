@@ -5,10 +5,14 @@
 #define GFX_BL 1
 Arduino_DataBus *bus = new Arduino_ESP32QSPI(
     45 /* cs */, 47 /* sck */, 21 /* d0 */, 48 /* d1 */, 40 /* d2 */, 39 /* d3 */);
+// #define CANVAS_R1
+#ifdef CANVAS_R1
 Arduino_AXS15231B *g = new Arduino_AXS15231B(bus, GFX_NOT_DEFINED /* RST */, 0 /* rotation */, false /* IPS */, 320 /* width */, 480 /* height */);
 #define CANVAS
 Arduino_Canvas *gfx = new Arduino_Canvas(320 /* width */, 480 /* height */, g, 0 /* output_x */, 0 /* output_y */, 1 /* rotation */);
-// #define CANVAS_R1
+#else
+Arduino_AXS15231B *gfx = new Arduino_AXS15231B(bus, GFX_NOT_DEFINED /* RST */, 0 /* rotation */, false /* IPS */, 320 /* width */, 480 /* height */);
+#endif
 #define GFX_SPEED 40000000UL
 
 // Button
