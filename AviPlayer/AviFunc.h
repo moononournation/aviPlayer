@@ -246,8 +246,12 @@ void avi_draw(int x, int y)
 #ifdef RGB_PANEL
     gfx->flush();
 #else
+#ifdef CANVAS_R1
+    g->draw16bitBeRGBBitmapR1(x, y, output_buf, avi_w, avi_h);
+#else
     gfx->draw16bitBeRGBBitmap(x, y, output_buf, avi_w, avi_h);
-#endif
+#endif // #ifdef CANVAS_R1
+#endif // #ifdef RGB_PANEL
     avi_total_show_video_ms += millis() - curr_ms;
 
     while (millis() < avi_next_frame_ms)
@@ -293,6 +297,10 @@ void avi_show_stat()
   Serial.printf("Decode audio: %lu ms (%0.1f %%)\n", total_decode_audio_ms, 100.0 * total_decode_audio_ms / time_used);
   Serial.printf("Play audio: %lu ms (%0.1f %%)\n", total_play_audio_ms, 100.0 * total_play_audio_ms / time_used);
 #endif // AVI_SUPPORT_AUDIO
+
+#ifdef CANVAS
+  gfx->draw16bitBeRGBBitmap(0, 0, output_buf, avi_w, avi_h);
+#endif
 
 #define CHART_MARGIN 32
 #define LEGEND_A_COLOR 0x1BB6
@@ -384,6 +392,10 @@ void avi_show_stat()
 #endif // AVI_SUPPORT_AUDIO
 
 #ifdef RGB_PANEL
+  gfx->flush();
+#endif
+
+#ifdef CANVAS
   gfx->flush();
 #endif
 }

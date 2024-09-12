@@ -38,6 +38,8 @@ ffmpeg -y -i input.mp4 -ac 1 -ar 44100 -af loudnorm -c:a pcm_u8 -c:v mjpeg -q:v 
 ffmpeg -y -i input.mp4 -ac 2 -ar 44100 -af loudnorm -c:a mp3 -c:v mjpeg -q:v 7 -vf "fps=15,scale=-1:272:flags=lanczos,crop=480:272:(in_w-480)/2:0" AviMp3Mjpeg272p15fps.avi
 
 ffmpeg -y -i input.mp4 -ac 2 -ar 44100 -af loudnorm -c:a mp3 -c:v mjpeg -q:v 7 -vf "scale=-1:360:flags=lanczos,crop=360:360:(in_w-360)/2:0" AviMp3Mjpeg360sq.avi
+
+ffmpeg -y -i input.mp4 -ac 2 -ar 44100 -af loudnorm -c:a mp3 -c:v mjpeg -q:v 7 -vf "fps=15,scale=-1:320:flags=lanczos,crop=480:320:(in_w-480)/2:0" AviMp3Mjpeg480x320.avi
 ```
 
 ### AVI for multi display
@@ -62,4 +64,10 @@ ffmpeg -y -i input.mp4 -ac 1 -ar 22050 -af loudnorm -c:a pcm_u8 -c:v cinepak -q:
 ffmpeg -y -i input.mp4 -ab 32k -ac 2 -ar 44100 -af loudnorm -c:a mp3 -c:v mjpeg -q:v 9 -vf "fps=10,scale=-1:240:flags=lanczos,crop=288:240:(in_w-288)/2:0" AviMp3Mjpeg288x240.avi
 
 ffmpeg -y -i input.mp4 -ac 1 -ar 22050 -af loudnorm -c:a pcm_u8 -c:v mjpeg -q:v 9 -vf "fps=12,scale=-1:240:flags=lanczos,crop=288:240:(in_w-288)/2:0" AviPcmu8Mjpeg288x240.avi
+```
+
+### AVI for T-Display S3 Pro
+
+```sh
+ffmpeg -y -i input.mp4 -ab 32k -ac 2 -ar 44100 -af loudnorm -c:a mp3 -c:v mjpeg -q:v 9 -vf "fps=15,scale=480:-1:flags=lanczos,crop=480:220:0:(in_h-220)/2" AviMp3Mjpeg480x220.avi
 ```

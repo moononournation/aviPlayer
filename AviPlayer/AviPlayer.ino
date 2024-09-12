@@ -29,7 +29,12 @@ const char *root = "/root";
 const char *avi_folder = "/avi_240p";
 // const char *avi_folder = "/avi_272p";
 // const char *avi_folder = "/avi288x240";
+// const char *avi_folder = "/avi480x220";
+// #ifdef CANVAS_R1
+// const char *avi_folder = "/avi480x320";
+// #else
 // const char *avi_folder = "/avi320x480";
+// #endif
 
 // uncomment one and only one of below dev device pin definition header
 // #include "iBubly.h"
@@ -38,6 +43,7 @@ const char *avi_folder = "/avi_240p";
 // #include "JC3636W518.h"
 // #include "JC4827W543.h"
 #include "T_DECK.h"
+// #include "T_DISPLAY_S3_PRO.h"
 
 #include <FFat.h>
 #include <LittleFS.h>
@@ -74,6 +80,9 @@ void setup()
     Serial.println("gfx->begin() failed!");
   }
   gfx->fillScreen(BLACK);
+#ifdef CANVAS
+  gfx->flush();
+#endif
 
 #ifdef GFX_BL
 #if defined(ESP_ARDUINO_VERSION_MAJOR) && (ESP_ARDUINO_VERSION_MAJOR < 3)
@@ -206,8 +215,8 @@ void loop()
             avi_close();
             Serial.println("AVI end");
 
-            // avi_show_stat();
-            // delay(5000); // 5 seconds
+            avi_show_stat();
+            delay(5000); // 5 seconds
           }
         }
       }
