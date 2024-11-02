@@ -18,7 +18,10 @@
 const char *root = "/root";
 // char *avi_filename = (char *)"/root/AviMp3Mjpeg240p15fps.avi";
 // char *avi_filename = (char *)"/root/AviMp3Mjpeg272p15fps.avi";
-char *avi_filename = (char *)"/root/AviMp3Mjpeg172p15fps.avi";
+char *avi_filename = (char *)"/root/AviMp3Mjpeg170x320.avi";
+// char *avi_filename = (char *)"/root/AviMp3Mjpeg172x320.avi";
+// char *avi_filename = (char *)"/root/AviMp3Mjpeg320x170.avi";
+// char *avi_filename = (char *)"/root/AviMp3Mjpeg320x172.avi";
 
 // #include "T_DECK.h"
 #include "ESP32_1732S019.h"
