@@ -71,3 +71,9 @@ ffmpeg -y -i input.mp4 -ac 1 -ar 22050 -af loudnorm -c:a pcm_u8 -c:v mjpeg -q:v 
 ```sh
 ffmpeg -y -i input.mp4 -ab 32k -ac 2 -ar 44100 -af loudnorm -c:a mp3 -c:v mjpeg -q:v 9 -vf "fps=15,scale=480:-1:flags=lanczos,crop=480:220:0:(in_h-220)/2" AviMp3Mjpeg480x220.avi
 ```
+
+### AVI for ESP32-1732S019
+
+```sh
+ffmpeg -y -i input.mp4 -ab 32k -ac 2 -ar 44100 -af loudnorm -c:a mp3 -c:v mjpeg -q:v 9 -vf "fps=15,scale=320:-1:flags=lanczos,crop=320:172:0:(in_h-172)/2" AviMp3Mjpeg172p15fps.avi
+```
