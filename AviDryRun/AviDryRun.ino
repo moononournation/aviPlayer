@@ -85,7 +85,7 @@ void setup()
 #elif defined(SD_CS)
   if (!SD.begin(SD_CS, SPI, 80000000, "/root"))
 #else
-  // if (!FFat.begin(false, root))
+  if (!FFat.begin(false, root))
   // if (!LittleFS.begin(false, root))
   // if (!SPIFFS.begin(false, root))
 #endif
