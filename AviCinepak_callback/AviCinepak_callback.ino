@@ -18,8 +18,8 @@ const char *root = "/root";
 // char *avi_filename = (char *)"/root/AviMp3Cinepak240p30fps.avi";
 char *avi_filename = (char *)"/root/AviMp3Cinepak288x240.avi";
 
-// #include "T_DECK.h"
-#include "ESP32_C3.h"
+// Dev Device Pins: <https://github.com/moononournation/Dev_Device_Pins.git>
+#include "PINS_T-DECK.h"
 
 #include <FFat.h>
 #include <LittleFS.h>
@@ -46,6 +46,10 @@ void draw_callback(uint16_t x, uint16_t y, uint16_t *p, uint16_t w, uint16_t h)
 
 void setup()
 {
+#ifdef DEV_DEVICE_INIT
+  DEV_DEVICE_INIT();
+#endif
+
   Serial.begin(115200);
   // Serial.setDebugOutput(true);
   // while(!Serial);
@@ -54,10 +58,6 @@ void setup()
   // If display and SD shared same interface, init SPI first
 #ifdef SPI_SCK
   SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI);
-#endif
-
-#ifdef GFX_EXTRA_PRE_INIT
-  GFX_EXTRA_PRE_INIT();
 #endif
 
   // Init Display

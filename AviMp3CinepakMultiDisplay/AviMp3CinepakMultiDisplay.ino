@@ -107,16 +107,16 @@ static void draw(uint16_t x, uint16_t y, uint16_t *p, uint16_t w, uint16_t h)
 
 void setup()
 {
+#ifdef DEV_DEVICE_INIT
+  DEV_DEVICE_INIT();
+#endif
+
   WiFi.mode(WIFI_OFF);
 
   Serial.begin(115200);
   // Serial.setDebugOutput(true);
   // while(!Serial);
   Serial.println("AviMp3CinepakMultiDisplay");
-
-#ifdef GFX_EXTRA_PRE_INIT
-  GFX_EXTRA_PRE_INIT();
-#endif
 
   Serial.println("Init display");
   if (!gfx->begin(GFX_SPEED))

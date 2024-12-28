@@ -22,7 +22,8 @@ char *avi_filename = (char *)"/root/AviMp3Cinepak240p30fps.avi";
 // char *avi_filename = (char *)"/root/AviPcmu8Mjpeg240p15fps.avi";
 // char *avi_filename = (char *)"/root/AviPcmu8Mjpeg272p15fps.avi";
 
-#include "T_DECK.h"
+// Dev Device Pins: <https://github.com/moononournation/Dev_Device_Pins.git>
+#include "PINS_T-DECK.h"
 
 #include <FFat.h>
 #include <LittleFS.h>

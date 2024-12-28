@@ -2,6 +2,15 @@
 
 A simple AVI player for Arduino IDE.
 
+## Dependent Libraries
+
+- Dev Device Pins: <https://github.com/moononournation/Dev_Device_Pins.git>
+- Arduino_GFX: <https://github.com/moononournation/Arduino_GFX.git>
+- avilib: <https://github.com/lanyou1900/avilib.git>
+- JPEGDEC: <https://github.com/bitbank2/JPEGDEC.git>
+- ESP32_JPEG: <https://github.com/esp-arduino-libs/ESP32_JPEG.git>
+- arduino-libhelix: <https://github.com/pschatzmann/arduino-libhelix.git>
+
 ## conversion
 
 ### Cinepak

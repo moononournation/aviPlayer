@@ -5,7 +5,7 @@
  * Arduino_GFX: https://github.com/moononournation/Arduino_GFX.git
  * avilib: https://github.com/lanyou1900/avilib.git
  * libhelix: https://github.com/pschatzmann/arduino-libhelix.git
- * ESP32_JPEG: https://github.com/esp-arduino-libs/ESP32_JPEG.git
+ * JPEGDEC: https://github.com/bitbank2/JPEGDEC.git
  *
  * Setup steps:
  * 1. Change your LCD parameters in Arduino_GFX setting
@@ -25,12 +25,11 @@
  * code 85: MP3
  ******************************************************************************/
 const char *root = "/root";
-const char *avi_folder = "/avi320x240";
+const char *avi_folder = "/";
+// const char *avi_folder = "/avi_240p";
 
 // Dev Device Pins: <https://github.com/moononournation/Dev_Device_Pins.git>
 #include "PINS_T-DECK.h"
-
-#include <string>
 
 #include <FFat.h>
 #include <LittleFS.h>
@@ -41,8 +40,35 @@ const char *avi_folder = "/avi320x240";
 size_t output_buf_size;
 uint16_t *output_buf;
 
-#include "AviFunc.h"
+#include "AviFunc_callback.h"
+#ifdef AVI_SUPPORT_AUDIO
 #include "esp32_audio.h"
+#endif
+
+// drawing callback
+void draw_callback(uint16_t x, uint16_t y, uint16_t *p, uint16_t w, uint16_t h)
+{
+  // Serial.printf("draw_callback(%d, %d, *p, %d, %d)\n", x, y, w, h);
+
+  unsigned long s = millis();
+  gfx->draw16bitBeRGBBitmap(x, y, p, w, h);
+  s = millis() - s;
+  avi_total_show_video_ms += s;
+  avi_total_decode_video_ms -= s;
+}
+
+int drawMCU(JPEGDRAW *pDraw)
+{
+  // Serial.printf("Draw pos = (%d, %d), size = %d x %d\n", pDraw->x, pDraw->y, pDraw->iWidth, pDraw->iHeight);
+
+  unsigned long s = millis();
+  gfx->draw16bitBeRGBBitmap(pDraw->x, pDraw->y, pDraw->pPixels, pDraw->iWidth, pDraw->iHeight);
+  s = millis() - s;
+  avi_total_show_video_ms += s;
+  avi_total_decode_video_ms -= s;
+
+  return 1;
+}
 
 void setup()
 {
@@ -53,7 +79,7 @@ void setup()
   Serial.begin(115200);
   // Serial.setDebugOutput(true);
   // while(!Serial);
-  Serial.println("AVI Player");
+  Serial.println("AVI Player Callback");
 
   // If display and SD shared same interface, init SPI first
 #ifdef SPI_SCK
@@ -67,9 +93,6 @@ void setup()
     Serial.println("gfx->begin() failed!");
   }
   gfx->fillScreen(BLACK);
-#ifdef CANVAS
-  gfx->flush();
-#endif
 
 #ifdef GFX_BL
 #if defined(ESP_ARDUINO_VERSION_MAJOR) && (ESP_ARDUINO_VERSION_MAJOR < 3)
@@ -85,12 +108,14 @@ void setup()
   // gfx->setTextColor(WHITE, BLACK);
   // gfx->setTextBound(60, 60, 240, 240);
 
+#ifdef AVI_SUPPORT_AUDIO
 #ifdef AUDIO_MUTE_PIN
   pinMode(AUDIO_MUTE_PIN, OUTPUT);
   digitalWrite(AUDIO_MUTE_PIN, HIGH);
 #endif
 
   i2s_init();
+#endif
 
 #if defined(SD_D1)
 #define FILESYSTEM SD_MMC
@@ -116,12 +141,8 @@ void setup()
   }
   else
   {
-    output_buf_size = gfx->width() * gfx->height() * 2;
-#ifdef RGB_PANEL
-    output_buf = gfx->getFramebuffer();
-#else
-    output_buf = (uint16_t *)aligned_alloc(16, output_buf_size);
-#endif
+    output_buf_size = gfx->width() * 4 * 2;
+    output_buf = (uint16_t *)heap_caps_aligned_alloc(16, output_buf_size * sizeof(uint16_t), MALLOC_CAP_DMA);
     if (!output_buf)
     {
       Serial.println("output_buf aligned_alloc failed!");
@@ -150,7 +171,6 @@ void loop()
         // if ((!s.starts_with(".")) && (s.ends_with(".avi")))
         if ((s.rfind(".", 0) != 0) && ((int)s.find(".avi", 0) > 0))
         {
-if (random(100) > 90) {
           s = root;
           s += file.path();
           if (avi_open((char *)s.c_str()))
@@ -158,6 +178,7 @@ if (random(100) > 90) {
             Serial.println("AVI start");
             gfx->fillScreen(BLACK);
 
+#ifdef AVI_SUPPORT_AUDIO
             if (avi_aRate > 0)
             {
               i2s_set_sample_rate(avi_aRate);
@@ -187,13 +208,17 @@ if (random(100) > 90) {
             {
               Serial.println("No audio task");
             }
+#endif
 
             avi_start_ms = millis();
 
             Serial.println("Start play loop");
             while (avi_curr_frame < avi_total_frames)
             {
+#ifdef AVI_SUPPORT_AUDIO
               avi_feed_audio();
+#endif
+
               if (avi_decode())
               {
                 avi_draw(0, 0);
@@ -206,7 +231,6 @@ if (random(100) > 90) {
             avi_show_stat();
             delay(5000); // 5 seconds
           }
-}
         }
       }
       file = dir.openNextFile();

@@ -19,7 +19,8 @@
 const char *root = "/root";
 char *avi_filename = (char *)"/root/AviPcmu8Mjpeg240p15fps.avi";
 
-#include "T_DECK.h"
+// Dev Device Pins: <https://github.com/moononournation/Dev_Device_Pins.git>
+#include "PINS_T-DECK.h"
 
 #include <FFat.h>
 #include <LittleFS.h>
@@ -35,6 +36,10 @@ uint16_t *output_buf;
 
 void setup()
 {
+#ifdef DEV_DEVICE_INIT
+  DEV_DEVICE_INIT();
+#endif
+
   Serial.begin(115200);
   // Serial.setDebugOutput(true);
   // while(!Serial);
@@ -43,10 +48,6 @@ void setup()
   // If display and SD shared same interface, init SPI first
 #ifdef SPI_SCK
   SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI);
-#endif
-
-#ifdef GFX_EXTRA_PRE_INIT
-  GFX_EXTRA_PRE_INIT();
 #endif
 
   // Init Display
