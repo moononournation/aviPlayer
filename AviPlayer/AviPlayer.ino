@@ -25,10 +25,11 @@
  * code 85: MP3
  ******************************************************************************/
 const char *root = "/root";
-const char *avi_folder = "/avi320x240";
+const char *avi_folder = "/avi";
 
 // Dev Device Pins: <https://github.com/moononournation/Dev_Device_Pins.git>
-#include "PINS_T-DECK.h"
+// #include "PINS_T-DECK.h"
+#include "PINS_ESP32-8048S070.h"
 
 #include <string>
 
@@ -77,8 +78,10 @@ void setup()
   ledcAttachPin(GFX_BL, 0);
   ledcWrite(0, 204);
 #else  // ESP_ARDUINO_VERSION_MAJOR >= 3
-  ledcAttachChannel(GFX_BL, 1000, 8, 1);
-  ledcWrite(GFX_BL, 204);
+//  ledcAttachChannel(GFX_BL, 1000, 8, 1);
+//  ledcWrite(GFX_BL, 204);
+  pinMode(GFX_BL, OUTPUT);
+  digitalWrite(GFX_BL, HIGH);
 #endif // ESP_ARDUINO_VERSION_MAJOR >= 3
 #endif // GFX_BL
 
@@ -117,7 +120,7 @@ void setup()
   else
   {
     output_buf_size = gfx->width() * gfx->height() * 2;
-#ifdef RGB_PANEL
+#if defined(RGB_PANEL) | defined(DSI_PANEL)
     output_buf = gfx->getFramebuffer();
 #else
     output_buf = (uint16_t *)aligned_alloc(16, output_buf_size);
@@ -203,7 +206,7 @@ if (random(100) > 90) {
             avi_close();
             Serial.println("AVI end");
 
-            avi_show_stat();
+//            avi_show_stat();
             delay(5000); // 5 seconds
           }
 }

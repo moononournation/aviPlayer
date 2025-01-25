@@ -18,13 +18,15 @@
 const char *root = "/root";
 // char *avi_filename = (char *)"/root/AviMp3Mjpeg240p15fps.avi";
 // char *avi_filename = (char *)"/root/AviMp3Mjpeg272p15fps.avi";
-char *avi_filename = (char *)"/root/AviMp3Mjpeg170x320.avi";
+// char *avi_filename = (char *)"/root/AviMp3Mjpeg170x320.avi";
 // char *avi_filename = (char *)"/root/AviMp3Mjpeg172x320.avi";
 // char *avi_filename = (char *)"/root/AviMp3Mjpeg320x170.avi";
 // char *avi_filename = (char *)"/root/AviMp3Mjpeg320x172.avi";
+char *avi_filename = (char *)"/root/avi/slides.avi";
 
 // Dev Device Pins: <https://github.com/moononournation/Dev_Device_Pins.git>
-#include "PINS_T-DECK.h"
+// #include "PINS_T-DECK.h"
+#include "PINS_ESP32-8048S070.h"
 
 #include <FFat.h>
 #include <LittleFS.h>
@@ -65,10 +67,12 @@ void setup()
 #if defined(ESP_ARDUINO_VERSION_MAJOR) && (ESP_ARDUINO_VERSION_MAJOR < 3)
   ledcSetup(0, 1000, 8);
   ledcAttachPin(GFX_BL, 0);
-  ledcWrite(0, 204);
+  ledcWrite(0, 192);
 #else  // ESP_ARDUINO_VERSION_MAJOR >= 3
-  ledcAttachChannel(GFX_BL, 1000, 8, 1);
-  ledcWrite(GFX_BL, 204);
+//  ledcAttachChannel(GFX_BL, 1000, 8, 1);
+//  ledcWrite(GFX_BL, 192);
+  pinMode(GFX_BL, OUTPUT);
+  digitalWrite(GFX_BL, HIGH);
 #endif // ESP_ARDUINO_VERSION_MAJOR >= 3
 #endif // GFX_BL
 
@@ -96,7 +100,7 @@ void setup()
   else
   {
     output_buf_size = gfx->width() * gfx->height() * 2;
-#ifdef RGB_PANEL
+#if defined(RGB_PANEL) | defined(DSI_PANEL)
     output_buf = gfx->getFramebuffer();
 #else
     output_buf = (uint16_t *)aligned_alloc(16, output_buf_size);
@@ -131,8 +135,8 @@ void loop()
     avi_close();
     Serial.println("AVI end");
 
-    avi_show_stat();
+//    avi_show_stat();
   }
 
-  delay(60 * 1000);
+  delay(1 * 1000);
 }

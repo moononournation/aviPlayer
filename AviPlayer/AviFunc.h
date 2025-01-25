@@ -76,7 +76,7 @@ bool avi_init()
 #ifdef AVI_SUPPORT_MJPEG
   // Generate default configuration
   jpeg_dec_config_t config = {
-      .output_type = JPEG_RAW_TYPE_RGB565_BE,
+      .output_type = JPEG_RAW_TYPE_RGB565_LE,
       .rotate = JPEG_ROTATE_0D,
   };
   // Create jpeg_dec
@@ -243,7 +243,7 @@ void avi_draw(int x, int y)
       || (millis() < avi_skip_frame_ms)) // skip lagging frame
   {
     unsigned long curr_ms = millis();
-#ifdef RGB_PANEL
+#if defined(RGB_PANEL) | defined(DSI_PANEL)
     gfx->flush();
 #else
 #ifdef CANVAS_R1
@@ -251,7 +251,7 @@ void avi_draw(int x, int y)
 #else
     gfx->draw16bitBeRGBBitmap(x, y, output_buf, avi_w, avi_h);
 #endif // #ifdef CANVAS_R1
-#endif // #ifdef RGB_PANEL
+#endif // #if defined(RGB_PANEL) | defined(DSI_PANEL)
     avi_total_show_video_ms += millis() - curr_ms;
 
     while (millis() < avi_next_frame_ms)
@@ -391,7 +391,7 @@ void avi_show_stat()
   gfx->printf("Play audio: %lu ms (%0.1f %%)\n", total_play_audio_ms, 100.0 * total_play_audio_ms / time_used);
 #endif // AVI_SUPPORT_AUDIO
 
-#ifdef RGB_PANEL
+#if defined(RGB_PANEL) | defined(DSI_PANEL)
   gfx->flush();
 #endif
 
