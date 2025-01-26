@@ -41,6 +41,8 @@ Arduino_GFX *gfx_br = new Arduino_ST7789(bus4, GFX_NOT_DEFINED /* RST */, 3 /* r
  * End of Arduino_GFX setting
  ******************************************************************************/
 
+#define BIG_ENDIAN_PIXEL
+#define USE_DRAW_CALLBACK
 #include "cinepak.h"
 CinepakDecoder decoder;
 

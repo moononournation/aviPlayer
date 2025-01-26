@@ -25,11 +25,12 @@
  * code 85: MP3
  ******************************************************************************/
 const char *root = "/root";
-const char *avi_folder = "/";
-// const char *avi_folder = "/avi_240p";
+const char *avi_folder = "/avi";
 
 // Dev Device Pins: <https://github.com/moononournation/Dev_Device_Pins.git>
 #include "PINS_T-DECK.h"
+
+#include <string>
 
 #include <FFat.h>
 #include <LittleFS.h>
@@ -51,7 +52,11 @@ void draw_callback(uint16_t x, uint16_t y, uint16_t *p, uint16_t w, uint16_t h)
   // Serial.printf("draw_callback(%d, %d, *p, %d, %d)\n", x, y, w, h);
 
   unsigned long s = millis();
+#ifdef BIG_ENDIAN_PIXEL
   gfx->draw16bitBeRGBBitmap(x, y, p, w, h);
+#else
+  gfx->draw16bitRGBBitmap(x, y, p, w, h);
+#endif
   s = millis() - s;
   avi_total_show_video_ms += s;
   avi_total_decode_video_ms -= s;
@@ -62,7 +67,11 @@ int drawMCU(JPEGDRAW *pDraw)
   // Serial.printf("Draw pos = (%d, %d), size = %d x %d\n", pDraw->x, pDraw->y, pDraw->iWidth, pDraw->iHeight);
 
   unsigned long s = millis();
+#ifdef BIG_ENDIAN_PIXEL
   gfx->draw16bitBeRGBBitmap(pDraw->x, pDraw->y, pDraw->pPixels, pDraw->iWidth, pDraw->iHeight);
+#else
+  gfx->draw16bitRGBBitmap(pDraw->x, pDraw->y, pDraw->pPixels, pDraw->iWidth, pDraw->iHeight);
+#endif
   s = millis() - s;
   avi_total_show_video_ms += s;
   avi_total_decode_video_ms -= s;
@@ -93,6 +102,9 @@ void setup()
     Serial.println("gfx->begin() failed!");
   }
   gfx->fillScreen(BLACK);
+#if defined(RGB_PANEL) || defined(DSI_PANEL) || defined(CANVAS)
+  gfx->flush(true /* force_flush */);
+#endif
 
 #ifdef GFX_BL
 #if defined(ESP_ARDUINO_VERSION_MAJOR) && (ESP_ARDUINO_VERSION_MAJOR < 3)
@@ -109,13 +121,17 @@ void setup()
   // gfx->setTextBound(60, 60, 240, 240);
 
 #ifdef AVI_SUPPORT_AUDIO
-#ifdef AUDIO_MUTE_PIN
-  pinMode(AUDIO_MUTE_PIN, OUTPUT);
-  digitalWrite(AUDIO_MUTE_PIN, HIGH);
+#ifdef AUDIO_EXTRA_PRE_INIT
+  AUDIO_EXTRA_PRE_INIT();
 #endif
 
   i2s_init();
+
+#ifdef AUDIO_MUTE
+  pinMode(AUDIO_MUTE, OUTPUT);
+  digitalWrite(AUDIO_MUTE, LOW); // mute first
 #endif
+#endif // AVI_SUPPORT_AUDIO
 
 #if defined(SD_D1)
 #define FILESYSTEM SD_MMC
@@ -154,6 +170,7 @@ void setup()
 
 void loop()
 {
+  Serial.printf("Open folder: %s\n", avi_folder);
   File dir = FILESYSTEM.open(avi_folder);
   if (!dir.isDirectory())
   {
@@ -171,65 +188,72 @@ void loop()
         // if ((!s.starts_with(".")) && (s.ends_with(".avi")))
         if ((s.rfind(".", 0) != 0) && ((int)s.find(".avi", 0) > 0))
         {
-          s = root;
-          s += file.path();
-          if (avi_open((char *)s.c_str()))
+          if (random(100) > 90)
           {
-            Serial.println("AVI start");
-            gfx->fillScreen(BLACK);
+            s = root;
+            s += file.path();
+            if (avi_open((char *)s.c_str()))
+            {
+              Serial.println("AVI start");
+              gfx->fillScreen(BLACK);
 
 #ifdef AVI_SUPPORT_AUDIO
-            if (avi_aRate > 0)
-            {
-              i2s_set_sample_rate(avi_aRate);
-            }
-
-            avi_feed_audio();
-
-            if (avi_aFormat == PCM_CODEC_CODE)
-            {
-              Serial.println("Start play PCM audio task");
-              BaseType_t ret_val = pcm_player_task_start();
-              if (ret_val != pdPASS)
+              if (avi_aRate > 0)
               {
-                Serial.printf("pcm_player_task_start failed: %d\n", ret_val);
+                i2s_set_sample_rate(avi_aRate);
               }
-            }
-            else if (avi_aFormat == MP3_CODEC_CODE)
-            {
-              Serial.println("Start play MP3 audio task");
-              BaseType_t ret_val = mp3_player_task_start();
-              if (ret_val != pdPASS)
-              {
-                Serial.printf("mp3_player_task_start failed: %d\n", ret_val);
-              }
-            }
-            else
-            {
-              Serial.println("No audio task");
-            }
-#endif
 
-            avi_start_ms = millis();
-
-            Serial.println("Start play loop");
-            while (avi_curr_frame < avi_total_frames)
-            {
-#ifdef AVI_SUPPORT_AUDIO
               avi_feed_audio();
+
+              if (avi_aFormat == PCM_CODEC_CODE)
+              {
+                Serial.println("Start play PCM audio task");
+                BaseType_t ret_val = pcm_player_task_start();
+                if (ret_val != pdPASS)
+                {
+                  Serial.printf("pcm_player_task_start failed: %d\n", ret_val);
+                }
+              }
+              else if (avi_aFormat == MP3_CODEC_CODE)
+              {
+                Serial.println("Start play MP3 audio task");
+                BaseType_t ret_val = mp3_player_task_start();
+                if (ret_val != pdPASS)
+                {
+                  Serial.printf("mp3_player_task_start failed: %d\n", ret_val);
+                }
+              }
+              else
+              {
+                Serial.println("No audio task");
+              }
 #endif
 
-              if (avi_decode())
+              avi_start_ms = millis();
+
+              Serial.println("Start play loop");
+              while (avi_curr_frame < avi_total_frames)
               {
-                avi_draw(0, 0);
+#ifdef AVI_SUPPORT_AUDIO
+                avi_feed_audio();
+#endif
+
+                if (avi_decode())
+                {
+                  avi_draw(0, 0);
+                }
               }
+
+#if defined(AVI_SUPPORT_AUDIO) && defined(AUDIO_MUTE)
+              digitalWrite(AUDIO_MUTE, LOW); // mute
+#endif
+
+              avi_close();
+              Serial.println("AVI end");
+
+              avi_show_stat();
+              delay(5000); // 5 seconds
             }
-
-            avi_close();
-            Serial.println("AVI end");
-
-            avi_show_stat();
-            delay(5000); // 5 seconds
           }
         }
       }

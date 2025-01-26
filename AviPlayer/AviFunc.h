@@ -18,6 +18,11 @@ extern "C"
 #define MJPEG_CODEC_CODE 1002
 
 #ifdef AVI_SUPPORT_CINEPAK
+#if defined(RGB_PANEL) || defined(DSI_PANEL) || defined(CANVAS)
+// use little endian pixel
+#else
+#define BIG_ENDIAN_PIXEL
+#endif
 #include "cinepak.h"
 CinepakDecoder cinepak;
 #endif // AVI_SUPPORT_CINEPAK
@@ -76,7 +81,11 @@ bool avi_init()
 #ifdef AVI_SUPPORT_MJPEG
   // Generate default configuration
   jpeg_dec_config_t config = {
+#ifdef BIG_ENDIAN_PIXEL
+      .output_type = JPEG_RAW_TYPE_RGB565_BE,
+#else
       .output_type = JPEG_RAW_TYPE_RGB565_LE,
+#endif
       .rotate = JPEG_ROTATE_0D,
   };
   // Create jpeg_dec
@@ -193,6 +202,7 @@ bool avi_decode()
     {
       Serial.printf("video_bytes(%ld) > estimateBufferSize(%ld)\n", video_bytes, estimateBufferSize);
       ++avi_curr_frame;
+      ++avi_skipped_frames;
       return false;
     }
     else
@@ -243,8 +253,8 @@ void avi_draw(int x, int y)
       || (millis() < avi_skip_frame_ms)) // skip lagging frame
   {
     unsigned long curr_ms = millis();
-#if defined(RGB_PANEL) | defined(DSI_PANEL)
-    gfx->flush();
+#if defined(RGB_PANEL) || defined(DSI_PANEL) || defined(CANVAS)
+    gfx->flush(true /* force_flush */);
 #else
 #ifdef CANVAS_R1
     g->draw16bitBeRGBBitmapR1(x, y, output_buf, avi_w, avi_h);
@@ -391,11 +401,7 @@ void avi_show_stat()
   gfx->printf("Play audio: %lu ms (%0.1f %%)\n", total_play_audio_ms, 100.0 * total_play_audio_ms / time_used);
 #endif // AVI_SUPPORT_AUDIO
 
-#if defined(RGB_PANEL) | defined(DSI_PANEL)
-  gfx->flush();
-#endif
-
-#ifdef CANVAS
-  gfx->flush();
+#if defined(RGB_PANEL) || defined(DSI_PANEL) || defined(CANVAS)
+  gfx->flush(true /* force_flush */);
 #endif
 }

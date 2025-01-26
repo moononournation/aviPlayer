@@ -22,6 +22,8 @@ ffmpeg -y -i input.mp4 -ac 1 -ar 44100 -af loudnorm -c:a pcm_u8 -c:v cinepak -q:
 
 ffmpeg -y -i input.mp4 -ac 2 -ar 44100 -af loudnorm -c:a mp3 -c:v cinepak -q:v 10 -vf "fps=30,scale=-1:272:flags=lanczos,crop=480:272:(in_w-480)/2:0" AviMp3Cinepak272p30fps.avi
 
+ffmpeg -y -i input.mp4 -ac 2 -ar 44100 -af loudnorm -c:a mp3 -c:v cinepak -q:v 100 -vf "fps=30,scale=-1:600:flags=lanczos,crop=1024:600:(in_w-1024)/2:0" AviMp3Cinepak1024x600.avi
+
 ffmpeg -y -i input.mp4 -ac 2 -ar 44100 -af loudnorm -c:a mp3 -c:v cinepak -q:v 10 -vf "scale=-1:360:flags=lanczos,crop=360:360:(in_w-360)/2:0" AviMp3Cinepak360sq.avi
 ```
 

@@ -1,6 +1,6 @@
 #define AVI_SUPPORT_CINEPAK
 #define AVI_SUPPORT_MJPEG
-// #define AVI_SUPPORT_AUDIO
+#define AVI_SUPPORT_AUDIO
 
 extern "C"
 {
@@ -18,6 +18,12 @@ extern "C"
 #define MJPEG_CODEC_CODE 1002
 
 #ifdef AVI_SUPPORT_CINEPAK
+#if defined(RGB_PANEL) || defined(DSI_PANEL) || defined(CANVAS)
+// use little endian pixel
+#else
+#define BIG_ENDIAN_PIXEL
+#endif
+#define USE_DRAW_CALLBACK
 #include "cinepak.h"
 CinepakDecoder cinepak;
 void draw_callback(uint16_t x, uint16_t y, uint16_t *p, uint16_t w, uint16_t h);
@@ -173,6 +179,7 @@ bool avi_decode()
     {
       Serial.printf("video_bytes(%ld) > estimateBufferSize(%ld)\n", video_bytes, estimateBufferSize);
       ++avi_curr_frame;
+      ++avi_skipped_frames;
       return false;
     }
     else
@@ -248,6 +255,10 @@ void avi_show_stat()
   Serial.printf("Decode audio: %lu ms (%0.1f %%)\n", total_decode_audio_ms, 100.0 * total_decode_audio_ms / time_used);
   Serial.printf("Play audio: %lu ms (%0.1f %%)\n", total_play_audio_ms, 100.0 * total_play_audio_ms / time_used);
 #endif // AVI_SUPPORT_AUDIO
+
+#ifdef CANVAS
+  gfx->draw16bitBeRGBBitmap(0, 0, output_buf, avi_w, avi_h);
+#endif
 
 #define CHART_MARGIN 32
 #define LEGEND_A_COLOR 0x1BB6
@@ -337,4 +348,8 @@ void avi_show_stat()
   gfx->setTextColor(LEGEND_H_COLOR, BLACK);
   gfx->printf("Play audio: %lu ms (%0.1f %%)\n", total_play_audio_ms, 100.0 * total_play_audio_ms / time_used);
 #endif // AVI_SUPPORT_AUDIO
+
+#if defined(RGB_PANEL) || defined(DSI_PANEL) || defined(CANVAS)
+  gfx->flush(true /* force_flush */);
+#endif
 }

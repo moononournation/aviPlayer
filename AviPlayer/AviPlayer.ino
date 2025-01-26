@@ -28,8 +28,7 @@ const char *root = "/root";
 const char *avi_folder = "/avi";
 
 // Dev Device Pins: <https://github.com/moononournation/Dev_Device_Pins.git>
-// #include "PINS_T-DECK.h"
-#include "PINS_ESP32-8048S070.h"
+#include "PINS_T-DECK.h"
 
 #include <string>
 
@@ -43,7 +42,9 @@ size_t output_buf_size;
 uint16_t *output_buf;
 
 #include "AviFunc.h"
+#ifdef AVI_SUPPORT_AUDIO
 #include "esp32_audio.h"
+#endif
 
 void setup()
 {
@@ -68,8 +69,8 @@ void setup()
     Serial.println("gfx->begin() failed!");
   }
   gfx->fillScreen(BLACK);
-#ifdef CANVAS
-  gfx->flush();
+#if defined(RGB_PANEL) || defined(DSI_PANEL) || defined(CANVAS)
+  gfx->flush(true /* force_flush */);
 #endif
 
 #ifdef GFX_BL
@@ -78,22 +79,26 @@ void setup()
   ledcAttachPin(GFX_BL, 0);
   ledcWrite(0, 204);
 #else  // ESP_ARDUINO_VERSION_MAJOR >= 3
-//  ledcAttachChannel(GFX_BL, 1000, 8, 1);
-//  ledcWrite(GFX_BL, 204);
-  pinMode(GFX_BL, OUTPUT);
-  digitalWrite(GFX_BL, HIGH);
+  ledcAttachChannel(GFX_BL, 1000, 8, 1);
+  ledcWrite(GFX_BL, 204);
 #endif // ESP_ARDUINO_VERSION_MAJOR >= 3
 #endif // GFX_BL
 
   // gfx->setTextColor(WHITE, BLACK);
   // gfx->setTextBound(60, 60, 240, 240);
 
-#ifdef AUDIO_MUTE_PIN
-  pinMode(AUDIO_MUTE_PIN, OUTPUT);
-  digitalWrite(AUDIO_MUTE_PIN, HIGH);
+#ifdef AVI_SUPPORT_AUDIO
+#ifdef AUDIO_EXTRA_PRE_INIT
+  AUDIO_EXTRA_PRE_INIT();
 #endif
 
   i2s_init();
+
+#ifdef AUDIO_MUTE
+  pinMode(AUDIO_MUTE, OUTPUT);
+  digitalWrite(AUDIO_MUTE, LOW); // mute first
+#endif
+#endif // AVI_SUPPORT_AUDIO
 
 #if defined(SD_D1)
 #define FILESYSTEM SD_MMC
@@ -136,6 +141,7 @@ void setup()
 
 void loop()
 {
+  Serial.printf("Open folder: %s\n", avi_folder);
   File dir = FILESYSTEM.open(avi_folder);
   if (!dir.isDirectory())
   {
@@ -153,63 +159,77 @@ void loop()
         // if ((!s.starts_with(".")) && (s.ends_with(".avi")))
         if ((s.rfind(".", 0) != 0) && ((int)s.find(".avi", 0) > 0))
         {
-if (random(100) > 90) {
-          s = root;
-          s += file.path();
-          if (avi_open((char *)s.c_str()))
+          if (random(100) > 90)
           {
-            Serial.println("AVI start");
-            gfx->fillScreen(BLACK);
-
-            if (avi_aRate > 0)
+            s = root;
+            s += file.path();
+            if (avi_open((char *)s.c_str()))
             {
-              i2s_set_sample_rate(avi_aRate);
-            }
+              Serial.println("AVI start");
+              gfx->fillScreen(BLACK);
 
-            avi_feed_audio();
+#ifdef AVI_SUPPORT_AUDIO
+#ifdef AUDIO_MUTE
+              digitalWrite(AUDIO_MUTE, HIGH); // unmute
+#endif
 
-            if (avi_aFormat == PCM_CODEC_CODE)
-            {
-              Serial.println("Start play PCM audio task");
-              BaseType_t ret_val = pcm_player_task_start();
-              if (ret_val != pdPASS)
+              if (avi_aRate > 0)
               {
-                Serial.printf("pcm_player_task_start failed: %d\n", ret_val);
+                i2s_set_sample_rate(avi_aRate);
               }
-            }
-            else if (avi_aFormat == MP3_CODEC_CODE)
-            {
-              Serial.println("Start play MP3 audio task");
-              BaseType_t ret_val = mp3_player_task_start();
-              if (ret_val != pdPASS)
-              {
-                Serial.printf("mp3_player_task_start failed: %d\n", ret_val);
-              }
-            }
-            else
-            {
-              Serial.println("No audio task");
-            }
 
-            avi_start_ms = millis();
-
-            Serial.println("Start play loop");
-            while (avi_curr_frame < avi_total_frames)
-            {
               avi_feed_audio();
-              if (avi_decode())
+
+              if (avi_aFormat == PCM_CODEC_CODE)
               {
-                avi_draw(0, 0);
+                Serial.println("Start play PCM audio task");
+                BaseType_t ret_val = pcm_player_task_start();
+                if (ret_val != pdPASS)
+                {
+                  Serial.printf("pcm_player_task_start failed: %d\n", ret_val);
+                }
               }
+              else if (avi_aFormat == MP3_CODEC_CODE)
+              {
+                Serial.println("Start play MP3 audio task");
+                BaseType_t ret_val = mp3_player_task_start();
+                if (ret_val != pdPASS)
+                {
+                  Serial.printf("mp3_player_task_start failed: %d\n", ret_val);
+                }
+              }
+              else
+              {
+                Serial.println("No audio task");
+              }
+#endif
+
+              avi_start_ms = millis();
+
+              Serial.println("Start play loop");
+              while (avi_curr_frame < avi_total_frames)
+              {
+#ifdef AVI_SUPPORT_AUDIO
+                avi_feed_audio();
+#endif
+
+                if (avi_decode())
+                {
+                  avi_draw(0, 0);
+                }
+              }
+
+#if defined(AVI_SUPPORT_AUDIO) && defined(AUDIO_MUTE)
+              digitalWrite(AUDIO_MUTE, LOW); // mute
+#endif
+
+              avi_close();
+              Serial.println("AVI end");
+
+              avi_show_stat();
+              delay(5000); // 5 seconds
             }
-
-            avi_close();
-            Serial.println("AVI end");
-
-//            avi_show_stat();
-            delay(5000); // 5 seconds
           }
-}
         }
       }
       file = dir.openNextFile();

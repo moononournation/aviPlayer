@@ -74,12 +74,16 @@ void setup()
   // gfx->setTextColor(WHITE, BLACK);
   // gfx->setTextBound(60, 60, 240, 240);
 
-#ifdef AUDIO_MUTE_PIN
-  pinMode(AUDIO_MUTE_PIN, OUTPUT);
-  digitalWrite(AUDIO_MUTE_PIN, HIGH);
+#ifdef AUDIO_EXTRA_PRE_INIT
+  AUDIO_EXTRA_PRE_INIT();
 #endif
 
   i2s_init();
+
+#ifdef AUDIO_MUTE
+  pinMode(AUDIO_MUTE, OUTPUT);
+  digitalWrite(AUDIO_MUTE, HIGH);
+#endif
 
 #if defined(SD_D1)
   SD_MMC.setPins(SD_SCK, SD_MOSI /* CMD */, SD_MISO /* D0 */, SD_D1, SD_D2, SD_CS /* D3 */);

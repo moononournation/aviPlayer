@@ -21,7 +21,8 @@
  *
  */
 
-#define BIG_ENDIAN_PIXEL
+/* Below 2 parameters should define before include this header file */
+// #define BIG_ENDIAN_PIXEL
 // #define USE_DRAW_CALLBACK
 
 #ifdef USE_DRAW_CALLBACK
