@@ -28,7 +28,8 @@ const char *root = "/root";
 const char *avi_folder = "/avi";
 
 // Dev Device Pins: <https://github.com/moononournation/Dev_Device_Pins.git>
-#include "PINS_T-DECK.h"
+// #include "PINS_T-DECK.h"
+#include "PINS_JC1060P470.h"
 
 #include <string>
 
@@ -37,9 +38,6 @@ const char *avi_folder = "/avi";
 #include <SPIFFS.h>
 #include <SD.h>
 #include <SD_MMC.h>
-
-size_t output_buf_size;
-uint16_t *output_buf;
 
 #include "AviFunc.h"
 #ifdef AVI_SUPPORT_AUDIO

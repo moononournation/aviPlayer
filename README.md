@@ -48,6 +48,8 @@ ffmpeg -y -i input.mp4 -ac 1 -ar 44100 -af loudnorm -c:a pcm_u8 -c:v mjpeg -q:v 
 
 ffmpeg -y -i input.mp4 -ac 2 -ar 44100 -af loudnorm -c:a mp3 -c:v mjpeg -q:v 7 -vf "fps=15,scale=-1:272:flags=lanczos,crop=480:272:(in_w-480)/2:0" AviMp3Mjpeg272p15fps.avi
 
+ffmpeg -y -i input.mp4 -ac 2 -ar 44100 -af loudnorm -c:a mp3 -c:v mjpeg -q:v 7 -vf "fps=30,scale=-1:600:flags=lanczos,crop=1024:592:(in_w-1024)/2:0" AviMp3Mjpeg1024x592.avi
+
 ffmpeg -y -i input.mp4 -ac 2 -ar 44100 -af loudnorm -c:a mp3 -c:v mjpeg -q:v 7 -vf "scale=-1:360:flags=lanczos,crop=360:360:(in_w-360)/2:0" AviMp3Mjpeg360sq.avi
 
 ffmpeg -y -i input.mp4 -ac 2 -ar 44100 -af loudnorm -c:a mp3 -c:v mjpeg -q:v 7 -vf "fps=12,scale=-1:320:flags=lanczos,crop=480:320:(in_w-480)/2:0" AviMp3Mjpeg480x320.avi

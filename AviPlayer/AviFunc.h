@@ -28,20 +28,28 @@ CinepakDecoder cinepak;
 #endif // AVI_SUPPORT_CINEPAK
 
 #ifdef AVI_SUPPORT_MJPEG
+#if defined(ESP32) && (CONFIG_IDF_TARGET_ESP32P4)
+#include <driver/jpeg_decode.h>
+jpeg_decoder_handle_t decoder_engine;
+#else
 #include <ESP32_JPEG_Library.h>
 jpeg_dec_handle_t *jpeg_dec;
 jpeg_dec_io_t *jpeg_io;
 jpeg_dec_header_info_t *out_info;
+#endif
 #endif // AVI_SUPPORT_MJPEG
 
 /* variables */
 avi_t *avi;
-long avi_total_frames, estimateBufferSize, avi_aRate, avi_aBytes, avi_aChunks, actual_video_size;
+long avi_total_frames, avi_aRate, avi_aBytes, avi_aChunks, actual_video_size;
 long avi_w, avi_h, avi_aChans, avi_aBits, avi_aFormat;
 double avi_fr;
 char *avi_compressor;
 long avi_vcodec;
+size_t estimateBufferSize;
 char *vidbuf;
+size_t output_buf_size;
+uint16_t *output_buf;
 long avi_curr_frame;
 int avi_curr_is_key_frame;
 long avi_skipped_frames;
@@ -61,7 +69,7 @@ unsigned long total_play_audio_ms;
 
 bool avi_init()
 {
-  estimateBufferSize = gfx->width() * gfx->height() * 2 / 5;
+  estimateBufferSize = output_buf_size / 5;
   vidbuf = (char *)heap_caps_malloc(estimateBufferSize, MALLOC_CAP_8BIT);
   if (!vidbuf)
   {
@@ -79,6 +87,13 @@ bool avi_init()
 #endif // AVI_SUPPORT_AUDIO
 
 #ifdef AVI_SUPPORT_MJPEG
+#if defined(ESP32) && (CONFIG_IDF_TARGET_ESP32P4)
+  jpeg_decode_engine_cfg_t decode_eng_cfg = {
+      .intr_priority = 0,
+      .timeout_ms = 40,
+  };
+  ESP_ERROR_CHECK(jpeg_new_decoder_engine(&decode_eng_cfg, &decoder_engine));
+#else
   // Generate default configuration
   jpeg_dec_config_t config = {
 #ifdef BIG_ENDIAN_PIXEL
@@ -96,6 +111,7 @@ bool avi_init()
 
   // Create out_info handle
   out_info = (jpeg_dec_header_info_t *)calloc(1, sizeof(jpeg_dec_header_info_t));
+#endif
 #endif // AVI_SUPPORT_MJPEG
 
   return true;
@@ -210,35 +226,43 @@ bool avi_decode()
       unsigned long curr_ms = millis();
       actual_video_size = AVI_read_frame(avi, vidbuf, &avi_curr_is_key_frame);
       avi_total_read_video_ms += millis() - curr_ms;
-#ifdef AVI_SUPPORT_AUDIO
-      // Serial.printf("frame: %ld, avi_curr_is_key_frame: %ld, video_bytes: %ld, actual_video_size: %ld, audio_bytes: %ld, ESP.getFreeHeap(): %ld\n", avi_curr_frame, avi_curr_is_key_frame, video_bytes, actual_video_size, audio_bytes, (long)ESP.getFreeHeap());
-#else
       // Serial.printf("frame: %ld, avi_curr_is_key_frame: %ld, video_bytes: %ld, actual_video_size: %ld, ESP.getFreeHeap(): %ld\n", avi_curr_frame, avi_curr_is_key_frame, video_bytes, actual_video_size, (long)ESP.getFreeHeap());
-#endif
 
       curr_ms = millis();
-      if (avi_vcodec == UNKNOWN_CODEC_CODE)
+      if (actual_video_size > 0)
       {
-      }
+        if (avi_vcodec == UNKNOWN_CODEC_CODE)
+        {
+        }
 #ifdef AVI_SUPPORT_CINEPAK
-      else if (avi_vcodec == CINEPAK_CODEC_CODE)
-      {
-        cinepak.decodeFrame((uint8_t *)vidbuf, actual_video_size, output_buf, output_buf_size);
-      }
+        else if (avi_vcodec == CINEPAK_CODEC_CODE)
+        {
+          cinepak.decodeFrame((uint8_t *)vidbuf, actual_video_size, output_buf, output_buf_size);
+        }
 #endif // AVI_SUPPORT_CINEPAK
 #ifdef AVI_SUPPORT_MJPEG
-      else if (avi_vcodec == MJPEG_CODEC_CODE)
-      {
-        jpeg_io->inbuf = (uint8_t *)vidbuf;
-        jpeg_io->inbuf_len = actual_video_size;
+#if defined(ESP32) && (CONFIG_IDF_TARGET_ESP32P4)
+        uint32_t out_size;
+        jpeg_decode_cfg_t decode_cfg_rgb = {
+            .output_format = JPEG_DECODE_OUT_FORMAT_RGB565,
+            .rgb_order = JPEG_DEC_RGB_ELEMENT_ORDER_BGR,
+        };
+        ESP_ERROR_CHECK(jpeg_decoder_process(decoder_engine, &decode_cfg_rgb, (const uint8_t *)vidbuf, actual_video_size, (uint8_t *)output_buf, output_buf_size, &out_size));
+#else
+        else if (avi_vcodec == MJPEG_CODEC_CODE)
+        {
+          jpeg_io->inbuf = (uint8_t *)vidbuf;
+          jpeg_io->inbuf_len = actual_video_size;
 
-        jpeg_dec_parse_header(jpeg_dec, jpeg_io, out_info);
+          jpeg_dec_parse_header(jpeg_dec, jpeg_io, out_info);
 
-        jpeg_io->outbuf = (uint8_t *)output_buf;
+          jpeg_io->outbuf = (uint8_t *)output_buf;
 
-        jpeg_dec_process(jpeg_dec, jpeg_io);
-      }
+          jpeg_dec_process(jpeg_dec, jpeg_io);
+        }
+#endif
 #endif // AVI_SUPPORT_MJPEG
+      }
       avi_total_decode_video_ms += millis() - curr_ms;
 
       ++avi_curr_frame;
