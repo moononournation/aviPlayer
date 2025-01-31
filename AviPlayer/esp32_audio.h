@@ -2,8 +2,7 @@
 
 #include "MP3DecoderHelix.h"
 
-#define I2S_OUTPUT_NUM I2S_NUM_0
-#define I2S_DEFAULT_SAMPLE_RATE 480000
+#define I2S_DEFAULT_SAMPLE_RATE 48000
 
 extern unsigned long total_decode_audio_ms;
 extern unsigned long total_play_audio_ms;
