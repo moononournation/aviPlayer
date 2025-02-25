@@ -3,7 +3,6 @@
  *
  * Dependent libraries:
  * Arduino_GFX: https://github.com/moononournation/Arduino_GFX.git
- * avilib: https://github.com/lanyou1900/avilib.git
  * libhelix: https://github.com/pschatzmann/arduino-libhelix.git
  * ESP32_JPEG: https://github.com/esp-arduino-libs/ESP32_JPEG.git
  *
@@ -28,8 +27,11 @@ const char *root = "/root";
 const char *avi_folder = "/avi";
 
 // Dev Device Pins: <https://github.com/moononournation/Dev_Device_Pins.git>
+// #include "PINS_AD35-S3.h"
+#include "PINS_ESP32-S3-Touch-LCD-2_8.h"
+// #include "PINS_IBUBLY.h"
+// #include "PINS_JC1060P470.h"
 // #include "PINS_T-DECK.h"
-#include "PINS_JC1060P470.h"
 
 #include <string>
 
@@ -224,8 +226,8 @@ void loop()
               avi_close();
               Serial.println("AVI end");
 
-              avi_show_stat();
-              delay(5000); // 5 seconds
+              // avi_show_stat();
+              // delay(5000); // 5 seconds
             }
           }
         }

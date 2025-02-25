@@ -2,10 +2,7 @@
 #define AVI_SUPPORT_MJPEG
 #define AVI_SUPPORT_AUDIO
 
-extern "C"
-{
-#include <avilib.h>
-}
+#include "avilibRead.h"
 
 #define SKIP_FRAME_TOLERANT_MS 250
 
@@ -46,7 +43,7 @@ long avi_w, avi_h, avi_aChans, avi_aBits, avi_aFormat;
 double avi_fr;
 char *avi_compressor;
 long avi_vcodec;
-size_t estimateBufferSize;
+long estimateBufferSize;
 char *vidbuf;
 size_t output_buf_size;
 uint16_t *output_buf;
@@ -153,7 +150,7 @@ bool avi_open(char *avi_filename)
   {
     avi_vcodec = UNKNOWN_CODEC_CODE;
   }
-  Serial.printf("AVI avi_total_frames: %ld, %ld x %ld @ %.2f fps, format: %s, estimateBufferSize: %ld, ESP.getFreeHeap(): %ld\n", avi_total_frames, avi_w, avi_h, avi_fr, avi_compressor, estimateBufferSize, (long)ESP.getFreeHeap());
+  Serial.printf("AVI avi_total_frames: %ld, %ld x %ld @ %.2f fps, format: %s, estimateBufferSize: %ld, ESP.getFreeHeap(): %ld, free PSRAM: %ld\n", avi_total_frames, avi_w, avi_h, avi_fr, avi_compressor, estimateBufferSize, (long)ESP.getFreeHeap(), heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
 
   avi_aChans = AVI_audio_channels(avi);
   avi_aBits = AVI_audio_bits(avi);
