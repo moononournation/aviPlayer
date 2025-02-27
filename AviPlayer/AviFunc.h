@@ -1,6 +1,6 @@
 #define AVI_SUPPORT_CINEPAK
 #define AVI_SUPPORT_MJPEG
-#define AVI_SUPPORT_AUDIO
+// #define AVI_SUPPORT_AUDIO // should define before include this header
 
 #include "avilibRead.h"
 
@@ -15,7 +15,7 @@
 #define MJPEG_CODEC_CODE 1002
 
 #ifdef AVI_SUPPORT_CINEPAK
-#if defined(RGB_PANEL) || defined(DSI_PANEL) || defined(CANVAS)
+#if defined(RGB_PANEL) || defined(DSI_PANEL)
 // use little endian pixel
 #else
 #define BIG_ENDIAN_PIXEL
@@ -274,7 +274,7 @@ void avi_draw(int x, int y)
       || (millis() < avi_skip_frame_ms)) // skip lagging frame
   {
     unsigned long curr_ms = millis();
-#if defined(RGB_PANEL) || defined(DSI_PANEL) || defined(CANVAS)
+#if defined(RGB_PANEL) || defined(DSI_PANEL)
     gfx->flush(true /* force_flush */);
 #else
 #ifdef CANVAS_R1
@@ -282,6 +282,9 @@ void avi_draw(int x, int y)
 #else
     gfx->draw16bitBeRGBBitmap(x, y, output_buf, avi_w, avi_h);
 #endif // #ifdef CANVAS_R1
+#ifdef CANVAS
+    gfx->flush();
+#endif // #ifdef CANVAS
 #endif // #if defined(RGB_PANEL) | defined(DSI_PANEL)
     avi_total_show_video_ms += millis() - curr_ms;
 

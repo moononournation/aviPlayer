@@ -96,3 +96,9 @@ ffmpeg -y -i input.mp4 -ab 32k -ac 2 -ar 44100 -af loudnorm -c:a mp3 -c:v mjpeg 
 
 ffmpeg -y -i input.mp4 -ab 32k -ac 2 -ar 44100 -af loudnorm -c:a mp3 -c:v mjpeg -q:v 9 -vf "fps=15,scale=-1:320:flags=lanczos,crop=172:320:(in_w-172)/2:0" AviMp3Mjpeg172x320.avi
 ```
+
+### AVI for LILYGO T4 S3
+
+```sh
+ffmpeg -y -i input.mp4 -an -c:v mjpeg -q:v 9 -vf "fps=15,scale=600:-1:flags=lanczos,transpose=1" AviMp3Mjpeg338x600.avi
+```
