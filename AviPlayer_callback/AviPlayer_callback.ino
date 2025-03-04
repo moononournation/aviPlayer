@@ -3,7 +3,6 @@
  *
  * Dependent libraries:
  * Arduino_GFX: https://github.com/moononournation/Arduino_GFX.git
- * avilib: https://github.com/lanyou1900/avilib.git
  * libhelix: https://github.com/pschatzmann/arduino-libhelix.git
  * JPEGDEC: https://github.com/bitbank2/JPEGDEC.git
  *
@@ -28,7 +27,14 @@ const char *root = "/root";
 const char *avi_folder = "/avi";
 
 // Dev Device Pins: <https://github.com/moononournation/Dev_Device_Pins.git>
-#include "PINS_T-DECK.h"
+#include "PINS_ESP32-C6-LCD-1_47.h"
+// #include "PINS_T-DECK.h"
+#ifdef I2S_OUTPUT
+#define AVI_SUPPORT_AUDIO
+#include "esp32_audio.h"
+#endif
+
+#include "AviFunc_callback.h"
 
 #include <string>
 
@@ -36,14 +42,8 @@ const char *avi_folder = "/avi";
 #include <LittleFS.h>
 #include <SPIFFS.h>
 #include <SD.h>
+#ifdef SOC_SDMMC_HOST_SUPPORTED
 #include <SD_MMC.h>
-
-size_t output_buf_size;
-uint16_t *output_buf;
-
-#include "AviFunc_callback.h"
-#ifdef AVI_SUPPORT_AUDIO
-#include "esp32_audio.h"
 #endif
 
 // drawing callback
@@ -133,11 +133,11 @@ void setup()
 #endif
 #endif // AVI_SUPPORT_AUDIO
 
-#if defined(SD_D1)
+#if defined(SD_D1) && defined(SOC_SDMMC_HOST_SUPPORTED)
 #define FILESYSTEM SD_MMC
   SD_MMC.setPins(SD_SCK, SD_MOSI /* CMD */, SD_MISO /* D0 */, SD_D1, SD_D2, SD_CS /* D3 */);
   if (!SD_MMC.begin(root, false /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_HIGHSPEED))
-#elif defined(SD_SCK)
+#elif defined(SD_SCK) && defined(SOC_SDMMC_HOST_SUPPORTED)
 #define FILESYSTEM SD_MMC
   pinMode(SD_CS, OUTPUT);
   digitalWrite(SD_CS, HIGH);
@@ -198,6 +198,10 @@ void loop()
               gfx->fillScreen(BLACK);
 
 #ifdef AVI_SUPPORT_AUDIO
+#ifdef AUDIO_MUTE
+              digitalWrite(AUDIO_MUTE, HIGH); // unmute
+#endif
+
               if (avi_aRate > 0)
               {
                 i2s_set_sample_rate(avi_aRate);

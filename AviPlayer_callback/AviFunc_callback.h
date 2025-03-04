@@ -1,11 +1,8 @@
 #define AVI_SUPPORT_CINEPAK
 #define AVI_SUPPORT_MJPEG
-#define AVI_SUPPORT_AUDIO
+// #define AVI_SUPPORT_AUDIO // should define before include this header
 
-extern "C"
-{
-#include <avilib.h>
-}
+#include "avilibRead.h"
 
 #define SKIP_FRAME_TOLERANT_MS 250
 
@@ -18,7 +15,7 @@ extern "C"
 #define MJPEG_CODEC_CODE 1002
 
 #ifdef AVI_SUPPORT_CINEPAK
-#if defined(RGB_PANEL) || defined(DSI_PANEL) || defined(CANVAS)
+#if defined(RGB_PANEL) || defined(DSI_PANEL)
 // use little endian pixel
 #else
 #define BIG_ENDIAN_PIXEL
@@ -37,12 +34,15 @@ int drawMCU(JPEGDRAW *pDraw);
 
 /* variables */
 avi_t *avi;
-long avi_total_frames, estimateBufferSize, avi_aRate, avi_aBytes, avi_aChunks, actual_video_size;
+long avi_total_frames, avi_aRate, avi_aBytes, avi_aChunks, actual_video_size;
 long avi_w, avi_h, avi_aChans, avi_aBits, avi_aFormat;
 double avi_fr;
 char *avi_compressor;
 long avi_vcodec;
+long estimateBufferSize;
 char *vidbuf;
+size_t output_buf_size;
+uint16_t *output_buf;
 long avi_curr_frame;
 int avi_curr_is_key_frame;
 long avi_skipped_frames;
@@ -194,24 +194,27 @@ bool avi_decode()
 #endif
 
       curr_ms = millis();
-      if (avi_vcodec == UNKNOWN_CODEC_CODE)
+      if (actual_video_size > 0)
       {
-      }
+        if (avi_vcodec == UNKNOWN_CODEC_CODE)
+        {
+        }
 #ifdef AVI_SUPPORT_CINEPAK
-      else if (avi_vcodec == CINEPAK_CODEC_CODE)
-      {
-        cinepak.decodeFrame((uint8_t *)vidbuf, actual_video_size, output_buf, output_buf_size, draw_callback, avi_curr_is_key_frame);
-      }
+        else if (avi_vcodec == CINEPAK_CODEC_CODE)
+        {
+          cinepak.decodeFrame((uint8_t *)vidbuf, actual_video_size, output_buf, output_buf_size, draw_callback, avi_curr_is_key_frame);
+        }
 #endif // AVI_SUPPORT_CINEPAK
 #ifdef AVI_SUPPORT_MJPEG
-      else if (avi_vcodec == MJPEG_CODEC_CODE)
-      {
-        jpegdec.openRAM((uint8_t *)vidbuf, actual_video_size, drawMCU);
-        jpegdec.setPixelType(RGB565_BIG_ENDIAN);
-        jpegdec.decode(0, 0, 0);
-        jpegdec.close();
-      }
+        else if (avi_vcodec == MJPEG_CODEC_CODE)
+        {
+          jpegdec.openRAM((uint8_t *)vidbuf, actual_video_size, drawMCU);
+          jpegdec.setPixelType(RGB565_BIG_ENDIAN);
+          jpegdec.decode(0, 0, 0);
+          jpegdec.close();
+        }
 #endif // AVI_SUPPORT_MJPEG
+      }
       avi_total_decode_video_ms += millis() - curr_ms;
 
       ++avi_curr_frame;
