@@ -47,7 +47,9 @@ const char *avi_folder = "/avi";
 #include <LittleFS.h>
 #include <SPIFFS.h>
 #include <SD.h>
+#ifdef SOC_SDMMC_HOST_SUPPORTED
 #include <SD_MMC.h>
+#endif
 
 void setup()
 {
@@ -103,11 +105,11 @@ void setup()
 #endif
 #endif // AVI_SUPPORT_AUDIO
 
-#if defined(SD_D1)
+#if defined(SD_D1) && defined(SOC_SDMMC_HOST_SUPPORTED)
 #define FILESYSTEM SD_MMC
   SD_MMC.setPins(SD_SCK, SD_MOSI /* CMD */, SD_MISO /* D0 */, SD_D1, SD_D2, SD_CS /* D3 */);
   if (!SD_MMC.begin(root, false /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_HIGHSPEED))
-#elif defined(SD_SCK)
+#elif defined(SD_SCK) && defined(SOC_SDMMC_HOST_SUPPORTED)
 #define FILESYSTEM SD_MMC
   pinMode(SD_CS, OUTPUT);
   digitalWrite(SD_CS, HIGH);
