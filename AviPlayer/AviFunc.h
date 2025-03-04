@@ -223,7 +223,11 @@ bool avi_decode()
       unsigned long curr_ms = millis();
       actual_video_size = AVI_read_frame(avi, vidbuf, &avi_curr_is_key_frame);
       avi_total_read_video_ms += millis() - curr_ms;
+#ifdef AVI_SUPPORT_AUDIO
+      // Serial.printf("frame: %ld, avi_curr_is_key_frame: %ld, video_bytes: %ld, actual_video_size: %ld, audio_bytes: %ld, ESP.getFreeHeap(): %ld\n", avi_curr_frame, avi_curr_is_key_frame, video_bytes, actual_video_size, audio_bytes, (long)ESP.getFreeHeap());
+#else
       // Serial.printf("frame: %ld, avi_curr_is_key_frame: %ld, video_bytes: %ld, actual_video_size: %ld, ESP.getFreeHeap(): %ld\n", avi_curr_frame, avi_curr_is_key_frame, video_bytes, actual_video_size, (long)ESP.getFreeHeap());
+#endif
 
       curr_ms = millis();
       if (actual_video_size > 0)
