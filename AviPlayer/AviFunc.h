@@ -14,12 +14,13 @@
 #define CINEPAK_CODEC_CODE 1001
 #define MJPEG_CODEC_CODE 1002
 
-#ifdef AVI_SUPPORT_CINEPAK
 #if defined(RGB_PANEL) || defined(DSI_PANEL)
 // use little endian pixel
 #else
 #define BIG_ENDIAN_PIXEL
 #endif
+
+#ifdef AVI_SUPPORT_CINEPAK
 #include "cinepak.h"
 CinepakDecoder cinepak;
 #endif // AVI_SUPPORT_CINEPAK

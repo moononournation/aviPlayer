@@ -96,12 +96,11 @@ void setup()
 #endif
 
   // Init Display
-  // if (!gfx->begin())
   if (!gfx->begin(GFX_SPEED))
   {
     Serial.println("gfx->begin() failed!");
   }
-  gfx->fillScreen(BLACK);
+  gfx->fillScreen(RGB565_BLACK);
 #if defined(RGB_PANEL) || defined(DSI_PANEL) || defined(CANVAS)
   gfx->flush(true /* force_flush */);
 #endif
@@ -154,6 +153,7 @@ void setup()
 #endif
   {
     Serial.println("ERROR: File system mount failed!");
+    gfx->println("ERROR: File System Mount Failed!");
   }
   else
   {
