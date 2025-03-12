@@ -31,15 +31,19 @@ const char *avi_folder = "/avi";
 // #include "PINS_ESP32-S3-Touch-LCD-2_8.h"
 // #include "PINS_IBUBLY.h"
 // #include "PINS_JC1060P470.h"
+// #include "PINS_JC3248W535.h"
 #include "PINS_T-DECK.h"
 // #include "PINS_T4_S3.h"
 
 #ifdef I2S_OUTPUT
 #define AVI_SUPPORT_AUDIO
-#include "esp32_audio.h"
 #endif
 
 #include "AviFunc.h"
+
+#ifdef AVI_SUPPORT_AUDIO
+#include "esp32_audio.h"
+#endif
 
 #include <string>
 

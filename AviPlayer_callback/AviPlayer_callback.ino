@@ -31,10 +31,13 @@ const char *avi_folder = "/avi";
 // #include "PINS_T-DECK.h"
 #ifdef I2S_OUTPUT
 #define AVI_SUPPORT_AUDIO
-#include "esp32_audio.h"
 #endif
 
 #include "AviFunc_callback.h"
+
+#ifdef AVI_SUPPORT_AUDIO
+#include "esp32_audio.h"
+#endif
 
 #include <string>
 
