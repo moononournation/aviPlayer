@@ -28,6 +28,8 @@ const char *avi_folder = "/avi";
 
 // Dev Device Pins: <https://github.com/moononournation/Dev_Device_Pins.git>
 // #include "PINS_AD35-S3.h"
+// #include "PINS_ESP32-S3-Touch-LCD-1.3.h"
+// #include "PINS_ESP32-S3-Touch-LCD-1.3_prism.h"
 // #include "PINS_ESP32-S3-Touch-LCD-2_8.h"
 // #include "PINS_IBUBLY.h"
 // #include "PINS_JC1060P470.h"
@@ -86,10 +88,10 @@ void setup()
 #if defined(ESP_ARDUINO_VERSION_MAJOR) && (ESP_ARDUINO_VERSION_MAJOR < 3)
   ledcSetup(0, 1000, 8);
   ledcAttachPin(GFX_BL, 0);
-  ledcWrite(0, 204);
+  ledcWrite(0, 63);
 #else  // ESP_ARDUINO_VERSION_MAJOR >= 3
   ledcAttachChannel(GFX_BL, 1000, 8, 1);
-  ledcWrite(GFX_BL, 204);
+  ledcWrite(GFX_BL, 63);
 #endif // ESP_ARDUINO_VERSION_MAJOR >= 3
 #endif // GFX_BL
 
