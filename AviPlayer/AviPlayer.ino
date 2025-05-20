@@ -34,6 +34,7 @@ const char *avi_folder = "/avi";
 // #include "PINS_IBUBLY.h"
 // #include "PINS_JC1060P470.h"
 // #include "PINS_JC3248W535.h"
+// #include "PINS_JC8012P4A1.h"
 #include "PINS_T-DECK.h"
 // #include "PINS_T4_S3.h"
 
@@ -237,8 +238,8 @@ void loop()
               avi_close();
               Serial.println("AVI end");
 
-              // avi_show_stat();
-              // delay(5000); // 5 seconds
+              avi_show_stat();
+              delay(60000); // 60 seconds
             }
           }
         }

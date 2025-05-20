@@ -102,3 +102,9 @@ ffmpeg -y -i input.mp4 -ab 32k -ac 2 -ar 44100 -af loudnorm -c:a mp3 -c:v mjpeg 
 ```sh
 ffmpeg -y -i input.mp4 -an -c:v mjpeg -q:v 9 -vf "fps=15,scale=600:-1:flags=lanczos,transpose=1" AviMp3Mjpeg338x600.avi
 ```
+
+### AVI for JC8012P4A1
+
+```sh
+ffmpeg -y -i input.mp4 -ab 32k -ac 2 -ar 44100 -af loudnorm -c:a mp3 -c:v mjpeg -q:v 11 -vf "fps=30,scale=-1:800:flags=lanczos,crop=1280:800:(in_w-1280)/2:0,transpose=1" AviMp3Mjpeg800x1280.avi
+```

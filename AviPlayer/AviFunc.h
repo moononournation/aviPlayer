@@ -353,7 +353,9 @@ void avi_show_stat()
 #define LEGEND_I_COLOR 0xBDE4
 #define LEGEND_J_COLOR 0x15F9
 
-  int16_t r1 = ((gfx->height() - CHART_MARGIN - CHART_MARGIN) / 2);
+  int16_t w = gfx->width();
+  int16_t h = gfx->height();
+  int16_t r1 = ((((w < h) ? w : h) - CHART_MARGIN - CHART_MARGIN) / 2);
   int16_t r2 = r1 / 2;
   int16_t cx = gfx->width() - r1 - CHART_MARGIN;
   int16_t cy = r1 + CHART_MARGIN;
