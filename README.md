@@ -88,7 +88,7 @@ ffmpeg -y -i input.mp4 -ab 32k -ac 2 -ar 44100 -af loudnorm -c:a mp3 -c:v mjpeg 
 ### AVI for ESP32-1732S019
 
 ```sh
-ffmpeg -y -i input.mp4 -ab 32k -ac 2 -ar 44100 -af loudnorm -c:a mp3 -c:v mjpeg -q:v 9 -vf "fps=15,scale=320:-1:flags=lanczos,crop=320:170:0:(in_h-172)/2" AviMp3Mjpeg320x170.avi
+ffmpeg -y -i input.mp4 -ab 32k -ac 2 -ar 44100 -af loudnorm -c:a mp3 -c:v mjpeg -q:v 9 -vf "fps=15,scale=320:-1:flags=lanczos,crop=320:170:0:(in_h-170)/2" AviMp3Mjpeg320x170.avi
 
 ffmpeg -y -i input.mp4 -ab 32k -ac 2 -ar 44100 -af loudnorm -c:a mp3 -c:v mjpeg -q:v 9 -vf "fps=15,scale=320:-1:flags=lanczos,crop=320:172:0:(in_h-172)/2" AviMp3Mjpeg320x172.avi
 
