@@ -28,6 +28,7 @@ const char *avi_folder = "/avi";
 
 // Dev Device Pins: <https://github.com/moononournation/Dev_Device_Pins.git>
 #include "PINS_ESP32-C6-LCD-1_47.h"
+// #include "PINS_ESP32-C6-LCD-1_9.h"
 // #include "PINS_T-DECK.h"
 #ifdef I2S_OUTPUT
 #define AVI_SUPPORT_AUDIO
