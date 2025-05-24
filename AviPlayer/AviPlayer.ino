@@ -28,8 +28,8 @@ const char *avi_folder = "/avi";
 
 // Dev Device Pins: <https://github.com/moononournation/Dev_Device_Pins.git>
 // #include "PINS_AD35-S3.h"
-// #include "PINS_ESP32-S3-Touch-LCD-1.3.h"
-// #include "PINS_ESP32-S3-Touch-LCD-1.3_prism.h"
+// #include "PINS_ESP32-S3-Touch-LCD-1_3.h"
+// #include "PINS_ESP32-S3-Touch-LCD-1_3_prism.h"
 // #include "PINS_ESP32-S3-Touch-LCD-2_8.h"
 // #include "PINS_IBUBLY.h"
 // #include "PINS_JC1060P470.h"
