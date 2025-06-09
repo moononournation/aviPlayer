@@ -24,8 +24,10 @@
  * code 85: MP3
  ******************************************************************************/
 const char *root = "/root";
-const char *avi_folder = "/avi";
+const char *avi_folder = "/";
 
+#include <Wire.h>
+#include "es8311.h"
 // Dev Device Pins: <https://github.com/moononournation/Dev_Device_Pins.git>
 // #include "PINS_AD35-S3.h"
 // #include "PINS_ESP32-S3-Touch-LCD-1_3.h"
