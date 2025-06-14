@@ -24,7 +24,7 @@
  * code 85: MP3
  ******************************************************************************/
 const char *root = "/root";
-const char *avi_folder = "/";
+const char *avi_folder = "/avi";
 
 #include <Wire.h>
 #include "es8311.h"
@@ -32,6 +32,7 @@ const char *avi_folder = "/";
 // #include "PINS_AD35-S3.h"
 // #include "PINS_ESP32-S3-Touch-LCD-1_3.h"
 // #include "PINS_ESP32-S3-Touch-LCD-1_3_prism.h"
+// #include "PINS_ESP32-S3-Touch-AMOLED-1_8.h"
 // #include "PINS_ESP32-S3-Touch-LCD-2_8.h"
 // #include "PINS_IBUBLY.h"
 // #include "PINS_JC1060P470.h"
@@ -116,21 +117,27 @@ void setup()
 
 #if defined(SD_D1) && defined(SOC_SDMMC_HOST_SUPPORTED)
 #define FILESYSTEM SD_MMC
+  Serial.println("mount SD_MMC 4-bit");
   SD_MMC.setPins(SD_SCK, SD_MOSI /* CMD */, SD_MISO /* D0 */, SD_D1, SD_D2, SD_CS /* D3 */);
   if (!SD_MMC.begin(root, false /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_HIGHSPEED))
 #elif defined(SD_SCK) && defined(SOC_SDMMC_HOST_SUPPORTED)
 #define FILESYSTEM SD_MMC
+  Serial.println("mount SD_MMC 1-bit");
   pinMode(SD_CS, OUTPUT);
   digitalWrite(SD_CS, HIGH);
   SD_MMC.setPins(SD_SCK, SD_MOSI /* CMD */, SD_MISO /* D0 */);
   if (!SD_MMC.begin(root, true /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_HIGHSPEED))
 #elif defined(SD_CS)
 #define FILESYSTEM SD
+  Serial.println("mount SPI SD");
   if (!SD.begin(SD_CS, SPI, 80000000, "/root"))
 #else
 #define FILESYSTEM FFat
+  Serial.println("mount FFat");
   if (!FFat.begin(false, root))
+  // Serial.println("mount LittleFS");
   // if (!LittleFS.begin(false, root))
+  // Serial.println("mount SPIFFS");
   // if (!SPIFFS.begin(false, root))
 #endif
   {
