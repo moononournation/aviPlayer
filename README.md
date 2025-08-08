@@ -114,3 +114,9 @@ ffmpeg -y -i input.mp4 -ab 32k -ac 2 -ar 44100 -af loudnorm -c:a mp3 -c:v mjpeg 
 ```sh
 ffmpeg -y -i input.mp4 -ab 32k -ac 2 -ar 44100 -af loudnorm -c:a mp3 -c:v mjpeg -q:v 11 -vf "fps=15,scale=-1:368:flags=lanczos,crop=448:368:(in_w-448)/2:0,transpose=1" AviMp3Mjpeg368x448.avi
 ```
+
+### AVI for ESP32-C6-LCD-1_47
+
+```sh
+ffmpeg -y -i input.mp4 -ab 64k -ac 2 -ar 44100 -af loudnorm -c:a mp3 -c:v mjpeg -q:v 11 -vf "fps=10,scale=320:-1:flags=lanczos,crop=320:172:0:(in_h-172)/2" AviMp3Mjpeg320x172.avi
+```

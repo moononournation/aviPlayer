@@ -4,7 +4,7 @@
 
 #include "avilibRead.h"
 
-#define SKIP_FRAME_TOLERANT_MS 250
+#define SKIP_FRAME_TOLERANT_MS 40
 
 #define MAX_AUDIO_FRAME_SIZE 1024 * 3
 
