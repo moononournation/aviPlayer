@@ -332,24 +332,24 @@ void avi_show_stat()
 #endif // AVI_SUPPORT_AUDIO
 
   gfx->setCursor(0, 0);
-  gfx->setTextColor(WHITE, BLACK);
+  gfx->setTextColor(RGB565_WHITE, RGB565_BLACK);
   gfx->printf("Played avi_frames: %d\n", played_frames);
   gfx->printf("Skipped avi_frames: %ld (%0.1f %%)\n", avi_skipped_frames, 100.0 * avi_skipped_frames / avi_total_frames);
   gfx->printf("Time used: %d ms\n", time_used);
   gfx->printf("Expected FPS: %0.1f\n", avi_fr);
   gfx->printf("Actual FPS: %0.1f\n\n", fps);
-  gfx->setTextColor(LEGEND_A_COLOR, BLACK);
+  gfx->setTextColor(LEGEND_A_COLOR, RGB565_BLACK);
   gfx->printf("Read video: %lu ms (%0.1f %%)\n", avi_total_read_video_ms, 100.0 * avi_total_read_video_ms / time_used);
-  gfx->setTextColor(LEGEND_B_COLOR, BLACK);
+  gfx->setTextColor(LEGEND_B_COLOR, RGB565_BLACK);
   gfx->printf("Decode video: %lu ms (%0.1f %%)\n", avi_total_decode_video_ms, 100.0 * avi_total_decode_video_ms / time_used);
-  gfx->setTextColor(LEGEND_C_COLOR, BLACK);
+  gfx->setTextColor(LEGEND_C_COLOR, RGB565_BLACK);
   gfx->printf("Show video: %lu ms (%0.1f %%)\n", avi_total_show_video_ms, 100.0 * avi_total_show_video_ms / time_used);
 #ifdef AVI_SUPPORT_AUDIO
-  gfx->setTextColor(LEGEND_D_COLOR, BLACK);
+  gfx->setTextColor(LEGEND_D_COLOR, RGB565_BLACK);
   gfx->printf("Read audio: %lu ms (%0.1f %%)\n", avi_total_read_audio_ms, 100.0 * avi_total_read_audio_ms / time_used);
-  gfx->setTextColor(LEGEND_G_COLOR, BLACK);
+  gfx->setTextColor(LEGEND_G_COLOR, RGB565_BLACK);
   gfx->printf("Decode audio: %lu ms (%0.1f %%)\n", total_decode_audio_ms, 100.0 * total_decode_audio_ms / time_used);
-  gfx->setTextColor(LEGEND_H_COLOR, BLACK);
+  gfx->setTextColor(LEGEND_H_COLOR, RGB565_BLACK);
   gfx->printf("Play audio: %lu ms (%0.1f %%)\n", total_play_audio_ms, 100.0 * total_play_audio_ms / time_used);
 #endif // AVI_SUPPORT_AUDIO
 

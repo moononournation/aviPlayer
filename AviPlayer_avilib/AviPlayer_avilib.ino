@@ -84,7 +84,7 @@ void setup()
   {
     Serial.println("gfx->begin() failed!");
   }
-  gfx->fillScreen(BLACK);
+  gfx->fillScreen(RGB565_BLACK);
 #if defined(RGB_PANEL) || defined(DSI_PANEL) || defined(CANVAS)
   gfx->flush(true /* force_flush */);
 #endif
@@ -100,7 +100,7 @@ void setup()
 #endif // ESP_ARDUINO_VERSION_MAJOR >= 3
 #endif // GFX_BL
 
-  // gfx->setTextColor(WHITE, BLACK);
+  // gfx->setTextColor(RGB565_WHITE, RGB565_BLACK);
   // gfx->setTextBound(60, 60, 240, 240);
 
 #ifdef AVI_SUPPORT_AUDIO
@@ -188,7 +188,7 @@ void loop()
             if (avi_open((char *)s.c_str()))
             {
               Serial.println("AVI start");
-              gfx->fillScreen(BLACK);
+              gfx->fillScreen(RGB565_BLACK);
 
 #ifdef AVI_SUPPORT_AUDIO
 #ifdef AUDIO_MUTE

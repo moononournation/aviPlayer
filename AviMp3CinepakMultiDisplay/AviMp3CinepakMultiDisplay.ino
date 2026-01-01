@@ -355,7 +355,7 @@ void loop()
 #define LEGEND_I_COLOR 0xBDE4
 #define LEGEND_J_COLOR 0x15F9
       gfx_tl->setCursor(0, 20);
-      gfx_tl->setTextColor(WHITE);
+      gfx_tl->setTextColor(RGB565_WHITE);
       gfx_tl->printf("Played frames: %d\n", played_frames);
       gfx_tl->printf("Skipped frames: %d (%0.1f %%)\n", skipped_frames, 100.0 * skipped_frames / total_frames);
       gfx_tl->printf("Time used: %d ms\n", time_used);

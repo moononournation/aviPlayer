@@ -58,7 +58,7 @@ void setup()
   {
     Serial.println("gfx->begin() failed!");
   }
-  gfx->fillScreen(BLACK);
+  gfx->fillScreen(RGB565_BLACK);
 
 #ifdef GFX_BL
 #if defined(ESP_ARDUINO_VERSION_MAJOR) && (ESP_ARDUINO_VERSION_MAJOR < 3)
@@ -71,7 +71,7 @@ void setup()
 #endif // ESP_ARDUINO_VERSION_MAJOR >= 3
 #endif // GFX_BL
 
-  // gfx->setTextColor(WHITE, BLACK);
+  // gfx->setTextColor(RGB565_WHITE, RGB565_BLACK);
   // gfx->setTextBound(60, 60, 240, 240);
 
 #ifdef AUDIO_EXTRA_PRE_INIT
@@ -125,7 +125,7 @@ void loop()
   if (avi_open(avi_filename))
   {
     Serial.println("AVI start");
-    gfx->fillScreen(BLACK);
+    gfx->fillScreen(RGB565_BLACK);
 
     i2s_set_sample_rate(avi_aRate);
 
